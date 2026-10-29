@@ -18,11 +18,16 @@ const KAB_LIST = [
   { id: 'Lombok Utara', label: 'Kab. Lombok Utara' }
 ]
 
-const TAHUN_LIST = ['all', '2026', '2027', '2028', '2029']
+const TAHUN_LIST = [
+  { id: 'all', label: 'Semua Tahun' },
+  { id: '2026', label: 'Tahun 2026' },
+  { id: '2027', label: 'Tahun 2027' },
+  { id: '2028', label: 'Tahun 2028' },
+  { id: '2029', label: 'Tahun 2029' }
+]
 
-// Fallback data mencakup berbagai Kab/Kota di Pulau Lombok
+// Fallback data
 const FALLBACK_LOKUS = [
-  // Kab. Lombok Barat (Tahun 2026 / 2027)
   { kode: 'SK-01', nama: 'SDN 1 Gerung', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.732, lng: 116.115, tahun: '2026', kader: 'Siti A', hp: '+628111', komitmen: 'ada' },
   { kode: 'SK-02', nama: 'SDN 2 Gerung', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.735, lng: 116.118, tahun: '2026', kader: 'Siti A', hp: '+628111', komitmen: 'ada' },
   { kode: 'SK-03', nama: 'MI NW Kediri', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Kediri', lat: -8.680, lng: 116.130, tahun: '2026', kader: 'Budi B', hp: '+628222', komitmen: 'ada' },
@@ -31,15 +36,9 @@ const FALLBACK_LOKUS = [
   { kode: 'PS-02', nama: 'Posyandu Melati Gerung', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.736, lng: 116.119, tahun: '2026', kader: 'Rina C', hp: '+628333', komitmen: 'ada' },
   { kode: 'PS-03', nama: 'Posyandu Kenanga Kediri', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Kediri', lat: -8.681, lng: 116.131, tahun: '2026', kader: 'Rina C', hp: '+628333', komitmen: 'ada' },
   { kode: 'PS-07', nama: 'Posyandu Flamboyan Lembar', kelompok: 'kontrol', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Lembar', lat: -8.750, lng: 116.070, tahun: '2026', kader: 'Dewi D', hp: '+628444', komitmen: 'belum' },
-  
-  // Kota Mataram (Tahun 2027 lokus berikutnya)
   { kode: 'SK-M01', nama: 'SDN 6 Mataram', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Kota Mataram', kec: 'Mataram', lat: -8.583, lng: 116.105, tahun: '2027', kader: 'Hj. Fatimah', hp: '+628555', komitmen: 'ada' },
   { kode: 'PS-M01', nama: 'Posyandu Cempaka Ampenan', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Kota Mataram', kec: 'Ampenan', lat: -8.572, lng: 116.082, tahun: '2027', kader: 'Ibu Nur', hp: '+628666', komitmen: 'ada' },
-  
-  // Kab. Lombok Tengah (Tahun 2028 lokus berikutnya)
   { kode: 'SK-T01', nama: 'SDN 1 Praya', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Tengah', kec: 'Praya', lat: -8.707, lng: 116.273, tahun: '2028', kader: 'Pak Lalu', hp: '+628777', komitmen: 'ada' },
-  
-  // Kab. Lombok Timur
   { kode: 'SK-E01', nama: 'SDN 1 Selong', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Timur', kec: 'Selong', lat: -8.650, lng: 116.533, tahun: '2028', kader: 'Ibu Baiq', hp: '+628888', komitmen: 'ada' }
 ]
 
@@ -62,7 +61,6 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [tab, setTab] = useState('Lokus')
   const [q, setQ] = useState('')
-  const [head, setHead] = useState([])
   const [rows, setRows] = useState([])
   const [allLokus, setAllLokus] = useState(FALLBACK_LOKUS)
   const [loading, setLoading] = useState(false)
@@ -79,7 +77,12 @@ export default function App() {
   // Edit nilai modal: { rowNum, kode, kel, pre, post, n }
   const [editNilai, setEditNilai] = useState(null)
   const [showAddModal, setShowAddModal] = useState(false)
+  
+  // Form Tambah Data State
   const [formData, setFormData] = useState({})
+  // Data dukung pilihan: 'gdrive' vs 'upload'
+  const [dataDukungType, setDataDukungType] = useState('gdrive')
+  const [uploadedFiles, setUploadedFiles] = useState([])
 
   const parseLokus = rs => (rs || []).map(r => ({
     _row: r[0],
@@ -101,38 +104,33 @@ export default function App() {
     const res = await callApi('read', { sheet: targetSheet, q: tab === 'Lokus' ? '' : q })
     setLoading(false)
 
-    if (res && res.head) {
-      setHead(res.head)
+    if (res && res.rows) {
       setRows(res.rows || [])
       if (tab === 'Lokus') {
         const pl = parseLokus(res.rows)
         if (pl.length) setAllLokus(pl)
       }
     } else {
-      // Fallback mode
+      // Fallback data
       if (tab === 'Lokus') {
-        setHead(['_row', 'kode', 'nama', 'kelompok', 'jenis', 'kab', 'kec', 'lat', 'lng', 'komitmen'])
         const f = FALLBACK_LOKUS.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))
         setRows(f.map((x, i) => [i + 2, x.kode, x.nama, x.kelompok, x.jenis, x.kab, x.kec, x.lat, x.lng, x.komitmen]))
       } else if (tab === 'Laporan') {
-        setHead(['_row', 'id', 'kode_lokus', 'bulan', 'tgl_edukasi', 'peserta', 'link_foto', 'status', 'stempel'])
         setRows([
-          [2, 'SK-01-B1', 'SK-01', 1, '2026-02-10', 45, 'https://drive.google.com', 'disetujui', '2026-02-11'],
+          [2, 'SK-01-B1', 'SK-01', 1, '2026-02-10', 45, 'https://drive.google.com/drive/folders/sample', 'disetujui', '2026-02-11'],
           [3, 'SK-01-B2', 'SK-01', 2, '2026-03-15', 48, '', 'belum', ''],
-          [4, 'PS-01-B1', 'PS-01', 1, '2026-02-12', 25, 'https://drive.google.com', 'disetujui', '2026-02-12']
+          [4, 'PS-01-B1', 'PS-01', 1, '2026-02-12', 25, 'Lampiran: 2 file foto (posyandu1.jpg, balita.png)', 'disetujui', '2026-02-12']
         ])
       } else if (tab === 'Nilai') {
-        setHead(['_row', 'kode_lokus', 'kelompok', 'pre_mean', 'post_mean', 'n', 'g', 'meningkat'])
         setRows([
           [2, 'SK-01', 'intervensi', 55, 80, 100, 0.55, 'YA'],
           [3, 'SK-02', 'intervensi', 60, 82, 100, 0.55, 'YA'],
           [4, 'SK-04', 'kontrol', 58, 62, 100, 0.09, '']
         ])
       } else if (tab === 'Monev') {
-        setHead(['_row', 'tgl', 'kode_lokus', 'temuan', 'tindak_lanjut', 'status'])
         setRows([
-          [2, '2026-02-01', 'SK-01', 'Poster PMT belum terpasang', 'Pasang sebelum edukasi B2', 'selesai'],
-          [3, '2026-02-05', 'PS-01', 'Kehadiran peserta posyandu minim', 'Libatkan kader PKK desa', 'terbuka']
+          [2, '2026-02-01', 'SK-01', 'Poster PMT belum terpasang di mading sekolah', 'Pasang sebelum edukasi tahap B2', 'selesai'],
+          [3, '2026-02-05', 'PS-01', 'Kehadiran peserta posyandu balita masih minim', 'Libatkan kader PKK desa dan tokoh warga', 'terbuka']
         ])
       }
     }
@@ -187,18 +185,14 @@ export default function App() {
     })
   }
 
-  const handleLogin = async (overrideUser = null) => {
-    if (overrideUser) {
-      setUser(overrideUser)
-      return
-    }
+  const handleLogin = async () => {
     setLoading(true)
     const r = await callApi('login', { u, p })
     setLoading(false)
     if (r && r.ok) {
       setUser(r.role || 'admin')
     } else {
-      alert('Username / password salah, atau backend belum terhubung.\nSilakan gunakan opsi masuk demo di bawah untuk menguji.')
+      alert('Username / password salah, atau backend belum terhubung.')
     }
   }
 
@@ -219,29 +213,76 @@ export default function App() {
     loadData()
   }
 
+  // Handle file uploads validation (max 10 files, max 10MB each, pdf/jpg/jpeg/png)
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length + uploadedFiles.length > 10) {
+      alert('Maksimal total 10 file yang diperbolehkan.')
+      return
+    }
+
+    const validFiles = []
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
+    
+    for (const f of files) {
+      if (f.size > 10 * 1024 * 1024) {
+        alert(`File ${f.name} melebihi batas 10 MB!`)
+        continue
+      }
+      if (!allowedTypes.includes(f.type) && !f.name.match(/\.(pdf|jpe?g|png)$/i)) {
+        alert(`File ${f.name} formatnya tidak didukung (hanya PDF, JPG, JPEG, PNG).`)
+        continue
+      }
+      validFiles.push(f)
+    }
+
+    setUploadedFiles(prev => [...prev, ...validFiles].slice(0, 10))
+  }
+
+  const removeUploadedFile = (idx) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== idx))
+  }
+
   const handleAddSubmit = async (e) => {
     e.preventDefault()
     let rowValues = []
+
     if (tab === 'Lokus') {
       rowValues = [
         formData.kode || `LK-${Date.now().toString().slice(-4)}`,
         formData.nama || '',
         formData.kelompok || 'intervensi',
         formData.jenis || 'sekolah',
-        formData.kab || 'Lombok Barat',
+        formData.kab || (filterKab !== 'all' ? filterKab : 'Lombok Barat'),
         formData.kec || 'Gerung',
         parseFloat(formData.lat) || -8.732,
         parseFloat(formData.lng) || 116.115,
         formData.komitmen || 'ada'
       ]
     } else if (tab === 'Laporan') {
+      const selectedBulan = formData.bulan || 1
+      const selectedTahun = formData.tahun || (filterTahun !== 'all' ? filterTahun : '2026')
+      const targetLokusKode = formData.kode_lokus || 'LK'
+      
+      // Susun data dukung: URL gdrive atau rincian file upload
+      let finalDataDukung = ''
+      if (dataDukungType === 'gdrive') {
+        finalDataDukung = formData.link_gdrive || ''
+      } else {
+        if (uploadedFiles.length > 0) {
+          finalDataDukung = `[${uploadedFiles.length} File]: ` + uploadedFiles.map(f => f.name).join(', ')
+        } else {
+          finalDataDukung = 'Belum ada file diunggah'
+        }
+      }
+
       rowValues = [
-        formData.id || `${formData.kode_lokus || 'LK'}-B${formData.bulan || 1}`,
-        formData.kode_lokus || '',
-        parseInt(formData.bulan) || 1,
+        `${targetLokusKode}-B${selectedBulan}-${selectedTahun}`,
+        targetLokusKode,
+        parseInt(selectedBulan),
         formData.tgl_edukasi || new Date().toISOString().slice(0, 10),
         parseInt(formData.peserta) || 0,
-        formData.link_foto || '',
+        finalDataDukung,
         formData.status || 'belum',
         ''
       ]
@@ -261,6 +302,7 @@ export default function App() {
     await callApi('add', { sheet: tab, row: rowValues })
     setShowAddModal(false)
     setFormData({})
+    setUploadedFiles([])
     loadData()
   }
 
@@ -280,11 +322,11 @@ export default function App() {
   )
 
   // -------------------------------------------------------------------------
-  // 1. TAMPILAN LOGIN
+  // 1. TAMPILAN LOGIN (Menu masuk cepat sudah dihapus)
   // -------------------------------------------------------------------------
   if (!user) {
     return (
-      <div style={{ maxWidth: 460, margin: '8vh auto', padding: 20 }}>
+      <div style={{ maxWidth: 460, margin: '10vh auto', padding: 20 }}>
         <Overlay />
         
         {/* Header Lembaga BPOM */}
@@ -313,7 +355,7 @@ export default function App() {
               <input
                 className="farm-input"
                 style={{ width: '100%' }}
-                placeholder="admin / verif / kader"
+                placeholder="Masukkan username..."
                 value={u}
                 onChange={e => setU(e.target.value)}
               />
@@ -340,25 +382,6 @@ export default function App() {
               Masuk ke Sistem
             </button>
           </div>
-
-          {/* Quick Demo Access */}
-          <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px dashed #EADCC2', textAlign: 'center' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#8C6239', marginBottom: 8 }}>
-              Pilihan Masuk Cepat (Demo):
-            </div>
-            <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={() => handleLogin('admin')} className="btn-harvest btn-wood" style={{ fontSize: 11, padding: '4px 10px' }}>
-                Admin
-              </button>
-              <button onClick={() => handleLogin('verifikator')} className="btn-harvest btn-cream" style={{ fontSize: 11, padding: '4px 10px' }}>
-                Verifikator
-              </button>
-              <button onClick={() => handleLogin('kader')} className="btn-harvest btn-cream" style={{ fontSize: 11, padding: '4px 10px' }}>
-                Kader
-              </button>
-            </div>
-          </div>
-
         </div>
       </div>
     )
@@ -409,30 +432,30 @@ export default function App() {
         </div>
       </div>
 
-      {/* MULTI-YEAR & MULTI-KABUPATEN FILTER BAR */}
+      {/* MULTI-YEAR DROPDOWN & MULTI-KABUPATEN DROPDOWN */}
       <div className="parchment-card" style={{ padding: '10px 16px', marginBottom: 14, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         
+        {/* 1. Tahun Anggaran DROPDOWN sampai 2029 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: '#5D4037' }}>📅 Tahun Anggaran:</span>
-          <div style={{ display: 'flex', gap: 4 }}>
+          <select
+            className="farm-input"
+            style={{ padding: '4px 10px', fontSize: 12, fontWeight: 700, color: '#5D4037', minWidth: 150 }}
+            value={filterTahun}
+            onChange={e => setFilterTahun(e.target.value)}
+          >
             {TAHUN_LIST.map(th => (
-              <button
-                key={th}
-                onClick={() => setFilterTahun(th)}
-                className={`btn-harvest ${filterTahun === th ? 'btn-green' : 'btn-cream'}`}
-                style={{ padding: '3px 8px', fontSize: 11 }}
-              >
-                {th === 'all' ? 'Semua Tahun' : th}
-              </button>
+              <option key={th.id} value={th.id}>{th.label}</option>
             ))}
-          </div>
+          </select>
         </div>
 
+        {/* 2. Wilayah Intervensi Kab/Kota se-Pulau Lombok */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: '#5D4037' }}>📍 Wilayah Intervensi:</span>
           <select
             className="farm-input"
-            style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#5D4037', minWidth: 200 }}
+            style={{ padding: '4px 10px', fontSize: 12, fontWeight: 700, color: '#5D4037', minWidth: 200 }}
             value={filterKab}
             onChange={e => setFilterKab(e.target.value)}
           >
@@ -444,7 +467,7 @@ export default function App() {
 
       </div>
 
-      {/* KPI Overview Cards (Dinamis Sesuai Filter Wilayah & Tahun) */}
+      {/* KPI Overview Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginBottom: 14 }}>
         
         <div className="parchment-card" style={{ padding: 14 }}>
@@ -514,28 +537,21 @@ export default function App() {
           ))}
         </div>
 
-        {/* Global Actions */}
+        {/* Global Action: 2. Ganti Hitung IKK jadi "Refresh Nilai", 3. Seed & Dummy dihapus */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button
-            onClick={() => { setLoading(true); callApi('ikk').then(() => { setLoading(false); loadData(); alert('Perhitungan N-Gain dan IKK berhasil diperbarui!') }) }}
+            onClick={() => {
+              setLoading(true)
+              callApi('ikk').then(() => {
+                setLoading(false)
+                loadData()
+                alert('Nilai N-Gain dan capaian IKK berhasil direfresh & dihitung ulang!')
+              })
+            }}
             className="btn-harvest btn-green"
-            style={{ padding: '6px 12px', fontSize: 12 }}
+            style={{ padding: '7px 14px', fontSize: 12 }}
           >
-            ✨ Hitung IKK
-          </button>
-          <button
-            onClick={() => { setLoading(true); callApi('seed').then(() => { setLoading(false); loadData(); alert('102 baris laporan berhasil di-generate!') }) }}
-            className="btn-harvest btn-gold"
-            style={{ padding: '6px 12px', fontSize: 12 }}
-          >
-            🌱 Seed 102
-          </button>
-          <button
-            onClick={() => { if (confirm('Isi 12 lokus dummy?')) { setLoading(true); callApi('dummy').then(() => { setLoading(false); loadData(); alert('Data lokus berhasil diatur!') }) } }}
-            className="btn-harvest btn-wood"
-            style={{ padding: '6px 12px', fontSize: 12 }}
-          >
-            🎲 Dummy Lokus
+            🔄 Refresh Nilai
           </button>
         </div>
 
@@ -567,7 +583,13 @@ export default function App() {
                 />
               </div>
               <button
-                onClick={() => { setFormData({ kab: filterKab !== 'all' ? filterKab : 'Lombok Barat', tahun: filterTahun !== 'all' ? filterTahun : '2026' }); setShowAddModal(true) }}
+                onClick={() => {
+                  setFormData({
+                    kab: filterKab !== 'all' ? filterKab : 'Lombok Barat',
+                    tahun: filterTahun !== 'all' ? filterTahun : '2026'
+                  })
+                  setShowAddModal(true)
+                }}
                 className="btn-harvest btn-wood"
               >
                 + Tambah Lokus Baru
@@ -578,13 +600,14 @@ export default function App() {
               <table className="farm-table">
                 <thead>
                   <tr>
+                    <th>#</th>
                     <th>Kode</th>
                     <th>Nama Lokus</th>
                     <th>Kelompok</th>
                     <th>Jenis</th>
                     <th>Kabupaten/Kota</th>
                     <th>Kecamatan</th>
-                    <th>Koordinat (lat, lng)</th>
+                    <th>Koordinat</th>
                     <th>Komitmen</th>
                     <th style={{ textAlign: 'right' }}>Aksi</th>
                   </tr>
@@ -592,20 +615,20 @@ export default function App() {
                 <tbody>
                   {filteredLokusByContext
                     .filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))
-                    .map(x => {
+                    .map((x, idx) => {
                       const isIntervensi = String(x.kelompok || '').toLowerCase() === 'intervensi'
                       const isLengkap = String(x.komitmen || '').toLowerCase() === 'ada'
                       return (
-                        <tr key={x.kode}>
+                        <tr key={x.kode || idx}>
+                          <td style={{ fontFamily: 'monospace', color: '#8C6239' }}>{idx + 1}</td>
                           <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#5D4037' }}>{x.kode}</td>
-                          <td>
-                            <strong>{x.nama}</strong>
-                          </td>
+                          <td><strong>{x.nama}</strong></td>
                           <td>
                             <span className={`farm-badge ${isIntervensi ? 'badge-green' : 'badge-wood'}`}>
                               {isIntervensi ? '🌱 Intervensi' : '🏫 Kontrol'}
                             </span>
                           </td>
+                          <td style={{ textTransform: 'capitalize' }}>{x.jenis}</td>
                           <td style={{ fontWeight: 600 }}>{x.kab}</td>
                           <td>{x.kec}</td>
                           <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#64748B' }}>
@@ -642,7 +665,7 @@ export default function App() {
             </div>
 
             <div style={{ marginTop: 10, fontSize: 11, color: '#8C6239' }}>
-              Menampilkan {filteredLokusByContext.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase())).length} lokus terdata di {filterKab === 'all' ? 'seluruh Pulau Lombok' : filterKab}.
+              Menampilkan {filteredLokusByContext.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase())).length} lokus terdata.
             </div>
           </div>
         </div>
@@ -723,8 +746,8 @@ export default function App() {
                     <th>Bulan</th>
                     <th>Tgl Edukasi</th>
                     <th>Jumlah Peserta</th>
+                    <th>Data Dukung</th>
                     <th>Status Laporan</th>
-                    <th>Bukti Foto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -734,16 +757,20 @@ export default function App() {
                       <td>{r[4] || '-'}</td>
                       <td>{r[5] ? `${r[5]} peserta` : '-'}</td>
                       <td>
+                        {r[6] ? (
+                          r[6].startsWith('http') ? (
+                            <a href={r[6]} target="_blank" rel="noreferrer" className="btn-harvest btn-cream" style={{ padding: '2px 8px', fontSize: 11 }}>
+                              🔗 Buka Drive ↗
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: 11, color: '#0369a1' }}>📁 {r[6]}</span>
+                          )
+                        ) : '-'}
+                      </td>
+                      <td>
                         <span className={`farm-badge ${r[7] === 'disetujui' ? 'badge-green' : 'badge-gold'}`}>
                           {r[7] === 'disetujui' ? '✓ Disetujui' : '⏳ ' + (r[7] || 'Belum')}
                         </span>
-                      </td>
-                      <td>
-                        {r[6] ? (
-                          <a href={r[6]} target="_blank" rel="noreferrer" className="btn-harvest btn-cream" style={{ padding: '2px 8px', fontSize: 11 }}>
-                            📷 Buka Foto
-                          </a>
-                        ) : '-'}
                       </td>
                     </tr>
                   ))}
@@ -769,9 +796,9 @@ export default function App() {
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* TAB 2, 3, 4: LAPORAN / NILAI / MONEV TABLE                           */}
+      {/* TAB 2: CATATAN EDUKASI (LAPORAN)                                     */}
       {/* --------------------------------------------------------------------- */}
-      {tab !== 'Lokus' && (
+      {tab === 'Laporan' && (
         <div className="parchment-card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 260 }}>
@@ -779,16 +806,21 @@ export default function App() {
               <input
                 className="farm-input"
                 style={{ width: '100%' }}
-                placeholder={`Cari data ${tab}...`}
+                placeholder="Cari id laporan, kode lokus, atau tanggal..."
                 value={q}
                 onChange={e => setQ(e.target.value)}
               />
             </div>
             <button
-              onClick={() => { setFormData({}); setShowAddModal(true) }}
+              onClick={() => {
+                setFormData({ bulan: 1, tahun: filterTahun !== 'all' ? filterTahun : '2026' })
+                setDataDukungType('gdrive')
+                setUploadedFiles([])
+                setShowAddModal(true)
+              }}
               className="btn-harvest btn-wood"
             >
-              + Tambah {tab} Baru
+              + Tambah Laporan Edukasi
             </button>
           </div>
 
@@ -796,56 +828,54 @@ export default function App() {
             <table className="farm-table">
               <thead>
                 <tr>
-                  {head.map(h => (
-                    <th key={h}>{h === '_row' ? '#' : h.replace('_', ' ')}</th>
-                  ))}
+                  <th>#</th>
+                  <th>ID Laporan</th>
+                  <th>Kode Lokus</th>
+                  <th>Bulan</th>
+                  <th>Tanggal Edukasi</th>
+                  <th>Jumlah Peserta</th>
+                  <th>Data Dukung / Foto</th>
+                  <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={head.length + 1} style={{ textAlign: 'center', padding: 24, color: '#8C6239' }}>
-                      Belum ada data untuk kriteria ini.
+                    <td colSpan={9} style={{ textAlign: 'center', padding: 24, color: '#8C6239' }}>
+                      Belum ada laporan edukasi tersimpan.
                     </td>
                   </tr>
                 ) : (
                   rows.map(r => (
                     <tr key={r[0]}>
-                      {r.slice(1).map((c, i) => {
-                        const col = head[i + 1] || ''
-                        if (col === 'status' || col === 'komitmen') {
-                          const isOk = ['disetujui', 'selesai', 'ada', 'lengkap'].includes(String(c).toLowerCase())
-                          return (
-                            <td key={i}>
-                              <span className={`farm-badge ${isOk ? 'badge-green' : 'badge-gold'}`}>
-                                {isOk ? '✓ ' + c : '⏳ ' + c}
-                              </span>
-                            </td>
+                      <td style={{ fontFamily: 'monospace', color: '#8C6239' }}>{r[0]}</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#5D4037' }}>{r[1]}</td>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{r[2]}</td>
+                      <td>Bulan {r[3]}</td>
+                      <td>{r[4] || '-'}</td>
+                      <td>{r[5] ? `${r[5]} orang` : '-'}</td>
+                      <td>
+                        {r[6] ? (
+                          r[6].startsWith('http') ? (
+                            <a href={r[6]} target="_blank" rel="noreferrer" className="btn-harvest btn-cream" style={{ padding: '2px 8px', fontSize: 11 }}>
+                              🔗 Buka Drive ↗
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: 11, color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: 4 }}>
+                              📁 {r[6]}
+                            </span>
                           )
-                        }
-                        if (col === 'link_foto' && c) {
-                          return (
-                            <td key={i}>
-                              <a href={c} target="_blank" rel="noreferrer" className="btn-harvest btn-cream" style={{ padding: '2px 8px', fontSize: 11 }}>
-                                📷 Foto ↗
-                              </a>
-                            </td>
-                          )
-                        }
-                        return <td key={i} style={{ fontFamily: ['kode_lokus', 'id', 'tgl', 'g'].includes(col) ? 'monospace' : 'inherit' }}>{String(c)}</td>
-                      })}
-
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        {tab === 'Nilai' && (
-                          <button
-                            onClick={() => setEditNilai({ rowNum: r[0], kode: r[1], kel: r[2], pre: r[3], post: r[4], n: r[5] })}
-                            className="btn-harvest btn-cream"
-                            style={{ padding: '3px 8px', fontSize: 11, marginRight: 4 }}
-                          >
-                            Edit Nilai
-                          </button>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: 11 }}>Tidak ada</span>
                         )}
+                      </td>
+                      <td>
+                        <span className={`farm-badge ${String(r[7]).toLowerCase() === 'disetujui' ? 'badge-green' : 'badge-gold'}`}>
+                          {String(r[7]).toLowerCase() === 'disetujui' ? '✓ Disetujui' : '⏳ ' + (r[7] || 'Belum')}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
                         {user !== 'kader' && (
                           <button
                             onClick={() => handleDelete(r[0])}
@@ -864,7 +894,208 @@ export default function App() {
           </div>
 
           <div style={{ marginTop: 10, fontSize: 11, color: '#8C6239' }}>
-            Menampilkan {rows.length} catatan pada lembar {tab}.
+            Menampilkan {rows.length} baris laporan edukasi.
+          </div>
+        </div>
+      )}
+
+      {/* --------------------------------------------------------------------- */}
+      {/* TAB 3: TIMBANGAN NILAI (Header & Kolom Eksplisit Pas)                */}
+      {/* --------------------------------------------------------------------- */}
+      {tab === 'Nilai' && (
+        <div className="parchment-card" style={{ padding: 18 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 260 }}>
+              <span style={{ fontSize: 15 }}>🔎</span>
+              <input
+                className="farm-input"
+                style={{ width: '100%' }}
+                placeholder="Cari kode lokus atau kelompok..."
+                value={q}
+                onChange={e => setQ(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={() => {
+                setLoading(true)
+                callApi('ikk').then(() => {
+                  setLoading(false)
+                  loadData()
+                  alert('Nilai N-Gain dan capaian IKK berhasil dihitung ulang!')
+                })
+              }}
+              className="btn-harvest btn-green"
+            >
+              🔄 Refresh & Hitung N-Gain
+            </button>
+          </div>
+
+          <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid #EADCC2' }}>
+            <table className="farm-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Kode Lokus</th>
+                  <th>Kelompok</th>
+                  <th>Pre-Test Mean</th>
+                  <th>Post-Test Mean</th>
+                  <th>Responden (n)</th>
+                  <th>N-Gain (g)</th>
+                  <th>Status Peningkatan</th>
+                  <th style={{ textAlign: 'right' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} style={{ textAlign: 'center', padding: 24, color: '#8C6239' }}>
+                      Belum ada data nilai terdaftar.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map(r => {
+                    const isIntervensi = String(r[2]).toLowerCase() === 'intervensi'
+                    const gainVal = typeof r[6] === 'number' ? r[6].toFixed(2) : (r[6] || '-')
+                    const isNaik = String(r[7]).toUpperCase() === 'YA'
+                    return (
+                      <tr key={r[0]}>
+                        <td style={{ fontFamily: 'monospace', color: '#8C6239' }}>{r[0]}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 800, color: '#5D4037' }}>{r[1]}</td>
+                        <td>
+                          <span className={`farm-badge ${isIntervensi ? 'badge-green' : 'badge-wood'}`}>
+                            {isIntervensi ? '🌱 Intervensi' : '🏫 Kontrol'}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 600 }}>{r[3]}</td>
+                        <td style={{ fontWeight: 700, color: '#2E7D32' }}>{r[4]}</td>
+                        <td>{r[5]} orang</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284C7' }}>
+                          {gainVal}
+                        </td>
+                        <td>
+                          <span className={`farm-badge ${isNaik ? 'badge-green' : 'badge-wood'}`}>
+                            {isNaik ? '✓ Meningkat Signifikan (g ≥ 0.3)' : 'Belum Mencapai Ambang'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <button
+                            onClick={() => setEditNilai({
+                              rowNum: r[0],
+                              kode: r[1],
+                              kel: r[2],
+                              pre: r[3],
+                              post: r[4],
+                              n: r[5]
+                            })}
+                            className="btn-harvest btn-cream"
+                            style={{ padding: '3px 8px', fontSize: 11, marginRight: 4 }}
+                          >
+                            Edit Nilai
+                          </button>
+                          {user !== 'kader' && (
+                            <button
+                              onClick={() => handleDelete(r[0])}
+                              className="btn-harvest btn-danger"
+                              style={{ padding: '3px 8px', fontSize: 11 }}
+                            >
+                              Hapus
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ marginTop: 10, fontSize: 11, color: '#8C6239' }}>
+            Rumus Gain: g = (Post - Pre) / (100 - Pre). Ambang efektivitas: g &ge; 0.3.
+          </div>
+        </div>
+      )}
+
+      {/* --------------------------------------------------------------------- */}
+      {/* TAB 4: PATROLI MONEV (Header & Kolom Eksplisit Pas)                  */}
+      {/* --------------------------------------------------------------------- */}
+      {tab === 'Monev' && (
+        <div className="parchment-card" style={{ padding: 18 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 260 }}>
+              <span style={{ fontSize: 15 }}>🔎</span>
+              <input
+                className="farm-input"
+                style={{ width: '100%' }}
+                placeholder="Cari temuan, kode lokus, atau tanggal..."
+                value={q}
+                onChange={e => setQ(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={() => { setFormData({}); setShowAddModal(true) }}
+              className="btn-harvest btn-wood"
+            >
+              + Tambah Catatan Monev
+            </button>
+          </div>
+
+          <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid #EADCC2' }}>
+            <table className="farm-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Tanggal</th>
+                  <th>Kode Lokus</th>
+                  <th>Temuan Lapangan</th>
+                  <th>Rencana Tindak Lanjut</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: '#8C6239' }}>
+                      Belum ada temuan patroli monev.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map(r => {
+                    const isSelesai = String(r[5]).toLowerCase() === 'selesai'
+                    return (
+                      <tr key={r[0]}>
+                        <td style={{ fontFamily: 'monospace', color: '#8C6239' }}>{r[0]}</td>
+                        <td style={{ fontFamily: 'monospace' }}>{r[1]}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 800, color: '#5D4037' }}>{r[2]}</td>
+                        <td style={{ maxWidth: 300 }}>{r[3]}</td>
+                        <td style={{ maxWidth: 300, color: '#2E7D32', fontWeight: 600 }}>{r[4]}</td>
+                        <td>
+                          <span className={`farm-badge ${isSelesai ? 'badge-green' : 'badge-gold'}`}>
+                            {isSelesai ? '✓ Selesai' : '⏳ Terbuka'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {user !== 'kader' && (
+                            <button
+                              onClick={() => handleDelete(r[0])}
+                              className="btn-harvest btn-danger"
+                              style={{ padding: '3px 8px', fontSize: 11 }}
+                            >
+                              Hapus
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ marginTop: 10, fontSize: 11, color: '#8C6239' }}>
+            Menampilkan {rows.length} catatan temuan patroli monev.
           </div>
         </div>
       )}
@@ -928,15 +1159,180 @@ export default function App() {
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* MODAL: TAMBAH DATA (Multi-Kabupaten Dropdown)                        */}
+      {/* MODAL: TAMBAH DATA (Laporan / Lokus / Monev)                          */}
       {/* --------------------------------------------------------------------- */}
       {showAddModal && (
         <div style={ovWrap} onClick={() => setShowAddModal(false)}>
-          <div className="parchment-card" style={{ maxWidth: 460, width: '100%', padding: 22 }} onClick={e => e.stopPropagation()}>
+          <div className="parchment-card" style={{ maxWidth: 500, width: '100%', padding: 22, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ color: '#5D4037', margin: '0 0 14px 0', fontFamily: 'var(--font-farm)', fontSize: 16 }}>
               + Tambah Catatan {tab}
             </h3>
-            <form onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            
+            <form onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              
+              {/* FORM CATATAN EDUKASI (LAPORAN) */}
+              {tab === 'Laporan' && (
+                <>
+                  {/* 1. Pilih Lokus (Dropdown Searchable / Datalist) */}
+                  <div>
+                    <label style={lb}>Pilih Lokus (Bisa Diketik / Dicari):</label>
+                    <input
+                      list="lokus-list-options"
+                      className="farm-input"
+                      style={{ width: '100%' }}
+                      placeholder="Ketik nama atau kode lokus..."
+                      value={formData.kode_lokus || ''}
+                      onChange={e => setFormData({ ...formData, kode_lokus: e.target.value })}
+                      required
+                    />
+                    <datalist id="lokus-list-options">
+                      {allLokus.map(l => (
+                        <option key={l.kode} value={l.kode}>
+                          {l.nama} ({l.kab} - Kec. {l.kec})
+                        </option>
+                      ))}
+                    </datalist>
+                    <div style={{ fontSize: 10, color: '#8C6239', marginTop: 2 }}>
+                      Pilih dari daftar saran atau ketik kode lokus (contoh: SK-01, PS-02).
+                    </div>
+                  </div>
+
+                  {/* 2. Bulan & Tahun Edukasi DROPDOWN */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <label style={lb}>Bulan Edukasi:</label>
+                      <select
+                        className="farm-input"
+                        style={{ width: '100%' }}
+                        value={formData.bulan || 1}
+                        onChange={e => setFormData({ ...formData, bulan: parseInt(e.target.value) })}
+                      >
+                        <option value={1}>Bulan 1 (Edukasi Awal)</option>
+                        <option value={2}>Bulan 2 (Edukasi Lanjutan)</option>
+                        <option value={3}>Bulan 3 (Evaluasi Akhir)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={lb}>Tahun Edukasi:</label>
+                      <select
+                        className="farm-input"
+                        style={{ width: '100%' }}
+                        value={formData.tahun || (filterTahun !== 'all' ? filterTahun : '2026')}
+                        onChange={e => setFormData({ ...formData, tahun: e.target.value })}
+                      >
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                        <option value="2028">2028</option>
+                        <option value="2029">2029</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <label style={lb}>Tanggal Edukasi:</label>
+                      <input
+                        type="date"
+                        className="farm-input"
+                        style={{ width: '100%' }}
+                        value={formData.tgl_edukasi || new Date().toISOString().slice(0, 10)}
+                        onChange={e => setFormData({ ...formData, tgl_edukasi: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label style={lb}>Jumlah Peserta Hadir:</label>
+                      <input
+                        type="number"
+                        className="farm-input"
+                        style={{ width: '100%' }}
+                        placeholder="Contoh: 45"
+                        value={formData.peserta || ''}
+                        onChange={e => setFormData({ ...formData, peserta: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Data Dukung: 2 Pilihan (Link GDrive atau Upload File) */}
+                  <div style={{ background: '#FFFDF9', border: '1.5px solid #E6D5B8', borderRadius: 10, padding: 12 }}>
+                    <label style={lb}>Pilihan Data Dukung / Dokumentasi:</label>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                      <button
+                        type="button"
+                        onClick={() => setDataDukungType('gdrive')}
+                        className={`btn-harvest ${dataDukungType === 'gdrive' ? 'btn-green' : 'btn-cream'}`}
+                        style={{ padding: '4px 10px', fontSize: 11 }}
+                      >
+                        🔗 Tautan Google Drive
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDataDukungType('upload')}
+                        className={`btn-harvest ${dataDukungType === 'upload' ? 'btn-green' : 'btn-cream'}`}
+                        style={{ padding: '4px 10px', fontSize: 11 }}
+                      >
+                        📁 Upload File (Maks 10 File)
+                      </button>
+                    </div>
+
+                    {dataDukungType === 'gdrive' ? (
+                      <div>
+                        <input
+                          className="farm-input"
+                          style={{ width: '100%' }}
+                          placeholder="https://drive.google.com/drive/folders/..."
+                          value={formData.link_gdrive || ''}
+                          onChange={e => setFormData({ ...formData, link_gdrive: e.target.value })}
+                        />
+                        <div style={{ fontSize: 10, color: '#8C6239', marginTop: 3 }}>
+                          Tempelkan tautan folder / foto kegiatan dari Google Drive.
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.jpeg,.png,.jpg"
+                          className="farm-input"
+                          style={{ width: '100%', fontSize: 11 }}
+                          onChange={handleFileChange}
+                        />
+                        <div style={{ fontSize: 10, color: '#8C6239', marginTop: 3 }}>
+                          Format: <strong>PDF, JPG, JPEG, PNG</strong> (Maks 10 MB per file, maksimal 10 file).
+                        </div>
+
+                        {/* List file terpilih */}
+                        {uploadedFiles.length > 0 && (
+                          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#2E7D32' }}>
+                              {uploadedFiles.length} File Terpilih:
+                            </div>
+                            {uploadedFiles.map((f, i) => (
+                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F1F5F9', padding: '4px 8px', borderRadius: 6, fontSize: 11 }}>
+                                <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: 340 }}>
+                                  📄 {f.name} ({(f.size / 1024 / 1024).toFixed(2)} MB)
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeUploadedFile(i)}
+                                  style={{ border: 'none', background: 'transparent', color: '#EF4444', fontWeight: 800, cursor: 'pointer' }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* FORM TAMBAH LOKUS */}
               {tab === 'Lokus' && (
                 <>
                   <div>
@@ -972,7 +1368,7 @@ export default function App() {
                       </select>
                     </div>
                     <div>
-                      <label style={lb}>Jenis:</label>
+                      <label style={lb}>Jenis Lokus:</label>
                       <select className="farm-input" style={{ width: '100%' }} value={formData.jenis || 'sekolah'} onChange={e => setFormData({ ...formData, jenis: e.target.value })}>
                         <option value="sekolah">Sekolah</option>
                         <option value="posyandu">Posyandu</option>
@@ -992,34 +1388,27 @@ export default function App() {
                 </>
               )}
 
-              {tab === 'Laporan' && (
-                <>
-                  <div>
-                    <label style={lb}>Kode Lokus:</label>
-                    <input className="farm-input" style={{ width: '100%' }} placeholder="Contoh: SK-01" value={formData.kode_lokus || ''} onChange={e => setFormData({ ...formData, kode_lokus: e.target.value })} required />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <div>
-                      <label style={lb}>Bulan Edukasi (1-3):</label>
-                      <input type="number" min="1" max="3" className="farm-input" style={{ width: '100%' }} value={formData.bulan || 1} onChange={e => setFormData({ ...formData, bulan: e.target.value })} />
-                    </div>
-                    <div>
-                      <label style={lb}>Jumlah Peserta:</label>
-                      <input type="number" className="farm-input" style={{ width: '100%' }} placeholder="45" value={formData.peserta || ''} onChange={e => setFormData({ ...formData, peserta: e.target.value })} />
-                    </div>
-                  </div>
-                  <div>
-                    <label style={lb}>Link Bukti Foto Google Drive:</label>
-                    <input className="farm-input" style={{ width: '100%' }} placeholder="https://drive.google.com/..." value={formData.link_foto || ''} onChange={e => setFormData({ ...formData, link_foto: e.target.value })} />
-                  </div>
-                </>
-              )}
-
+              {/* FORM TAMBAH MONEV */}
               {tab === 'Monev' && (
                 <>
                   <div>
-                    <label style={lb}>Kode Lokus:</label>
-                    <input className="farm-input" style={{ width: '100%' }} placeholder="SK-01 / PS-01" value={formData.kode_lokus || ''} onChange={e => setFormData({ ...formData, kode_lokus: e.target.value })} required />
+                    <label style={lb}>Pilih Lokus:</label>
+                    <input
+                      list="monev-lokus-options"
+                      className="farm-input"
+                      style={{ width: '100%' }}
+                      placeholder="Ketik kode atau nama lokus..."
+                      value={formData.kode_lokus || ''}
+                      onChange={e => setFormData({ ...formData, kode_lokus: e.target.value })}
+                      required
+                    />
+                    <datalist id="monev-lokus-options">
+                      {allLokus.map(l => (
+                        <option key={l.kode} value={l.kode}>
+                          {l.nama} ({l.kab} - Kec. {l.kec})
+                        </option>
+                      ))}
+                    </datalist>
                   </div>
                   <div>
                     <label style={lb}>Temuan Lapangan:</label>
@@ -1032,19 +1421,12 @@ export default function App() {
                 </>
               )}
 
-              {tab === 'Nilai' && (
-                <div>
-                  <label style={lb}>Baris Nilai (format: kode, kelompok, pre, post, n):</label>
-                  <input className="farm-input" style={{ width: '100%' }} placeholder="SK-05, intervensi, 55, 80, 100" value={formData.raw || ''} onChange={e => setFormData({ ...formData, raw: e.target.value })} />
-                </div>
-              )}
-
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
                 <button type="button" onClick={() => setShowAddModal(false)} className="btn-harvest btn-cream">
                   Batal
                 </button>
                 <button type="submit" className="btn-harvest btn-green">
-                  Simpan Data
+                  Simpan Catatan
                 </button>
               </div>
             </form>
@@ -1059,7 +1441,6 @@ export default function App() {
 const lb = { display: 'block', fontSize: 11, fontWeight: 700, color: '#8C6239', marginBottom: 3 }
 const h4 = { color: '#5D4037', margin: '14px 0 8px 0', fontSize: 13, fontWeight: 800 }
 
-// Clean White Overlay & Card (Bukan coklat)
 const ovWrap = {
   position: 'fixed',
   inset: 0,
