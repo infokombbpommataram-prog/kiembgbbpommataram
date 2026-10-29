@@ -91,6 +91,9 @@ export default function App() {
   // Data dukung pilihan: 'gdrive' vs 'upload'
   const [dataDukungType, setDataDukungType] = useState('gdrive')
   const [uploadedFiles, setUploadedFiles] = useState([])
+  
+  // Modal Preview Data Dukung (Tombol Mata 👁️)
+  const [previewDataDukung, setPreviewDataDukung] = useState(null)
 
   const parseLokus = rs => (rs || []).map(r => ({
     _row: r[0],
