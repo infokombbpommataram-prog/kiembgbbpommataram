@@ -117,6 +117,7 @@ function doPost(e) {
   if (b.fn === 'read') return R(apiRead(b.sheet, b.q || ''));
   if (b.fn === 'add') return R(apiAdd(b.sheet, b.row));
   if (b.fn === 'del' && SHEET_ALLOW.includes(b.sheet)) { SpreadsheetApp.getActive().getSheetByName(b.sheet).deleteRow(+b.rowNum); return R({ ok: 1 }); }
+  if (b.fn === 'upd' && SHEET_ALLOW.includes(b.sheet)) { apiUpd(b.sheet, +b.rowNum, b.row); return R({ ok: 1 }); }
   if (b.fn === 'ikk') { hitungIKK(); return R({ ok: 1 }); }
   if (b.fn === 'seed') { buatLaporan(); return R({ ok: 1 }); }
   if (b.fn === 'dummy') { isiDummy(); buatLaporan(); hitungIKK(); return R({ ok: 1 }); }

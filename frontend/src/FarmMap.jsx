@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 
-export default function FarmMap({ lokusList = [] }) {
+export default function FarmMap({ lokusList = [], onPick = null }) {
   const mapContainerRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const markersLayerRef = useRef(null)
@@ -138,10 +138,11 @@ export default function FarmMap({ lokusList = [] }) {
         </div>
       `
       marker.bindPopup(popupHtml)
+      if (onPick) marker.on('click', () => onPick(item.kode))
       marker.addTo(markersGroup)
       item._marker = marker
     })
-  }, [lokusList, filterKelompok])
+  }, [lokusList, filterKelompok, onPick])
 
   const flyToLokus = (item) => {
     const lat = parseFloat(item.lat)
