@@ -1692,6 +1692,9 @@ export default function App() {
               }
 
               // Jika berupa rincian berkas terunggah (misal: [1 File]: 20261028193059Surat Penerimaan PKL - K3 UNBIM.pdf)
+              const cleanFileName = String(previewDataDukung.raw || '').replace(/^\[\d+\s*File\]:\s*/i, '').trim()
+              const searchFileUrl = `https://drive.google.com/drive/search?q=${encodeURIComponent(cleanFileName)}`
+
               return (
                 <div style={{ background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13, color: '#2E7D32', marginBottom: 10 }}>
@@ -1702,23 +1705,33 @@ export default function App() {
                   <div style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#1E293B', wordBreak: 'break-word', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                       <span>📄</span>
-                      <span>{previewDataDukung.raw || '(Tidak ada keterangan file)'}</span>
+                      <span>{cleanFileName || previewDataDukung.raw || '(Tidak ada keterangan file)'}</span>
                     </div>
-                    <div style={{ fontSize: 11, color: '#64748B', marginTop: 6 }}>
-                      Status: Berkas tercatat di lembar laporan lokus ini.
+                    <div style={{ fontSize: 11, color: '#64748B', marginTop: 6, lineHeight: 1.4 }}>
+                      ℹ️ Laporan ini tercatat dengan nama berkas di database.
                     </div>
                   </div>
 
-                  {/* Tombol Akses & Download ke Google Drive */}
+                  {/* Tombol Akses & Buka Langsung ke Google Drive */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <a
-                      href={MAIN_DRIVE_FOLDER}
+                      href={searchFileUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="btn-harvest btn-green"
                       style={{ padding: '7px 14px', fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      title="Buka langsung file ini di Google Drive berdasarkan nama berkas"
                     >
-                      📂 Buka Folder Drive Dokumentasi ↗
+                      🔍 Buka Langsung File di Drive ↗
+                    </a>
+                    <a
+                      href={MAIN_DRIVE_FOLDER}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-harvest btn-cream"
+                      style={{ padding: '7px 14px', fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      📂 Buka Folder Drive Utama ↗
                     </a>
                   </div>
                 </div>
