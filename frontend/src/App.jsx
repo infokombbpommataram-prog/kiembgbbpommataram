@@ -811,14 +811,25 @@ export default function App() {
                       <td>{r[5] ? `${r[5]} peserta` : '-'}</td>
                       <td>
                         {r[6] ? (
-                          r[6].startsWith('http') ? (
-                            <a href={r[6]} target="_blank" rel="noreferrer" className="btn-harvest btn-cream" style={{ padding: '2px 8px', fontSize: 11 }}>
-                              🔗 Buka Drive ↗
-                            </a>
-                          ) : (
-                            <span style={{ fontSize: 11, color: '#0369a1' }}>📁 {r[6]}</span>
-                          )
-                        ) : '-'}
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDataDukung({
+                              id: r[1],
+                              kode: detail?.info?.kode || '-',
+                              bulan: r[3],
+                              tgl: r[4],
+                              peserta: r[5],
+                              raw: r[6]
+                            })}
+                            className="btn-harvest btn-cream"
+                            style={{ padding: '3px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            title="Lihat Data Dukung"
+                          >
+                            👁️ Lihat
+                          </button>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: 11 }}>-</span>
+                        )}
                       </td>
                       <td>
                         <span className={`farm-badge ${r[7] === 'disetujui' ? 'badge-green' : 'badge-gold'}`}>
@@ -912,15 +923,22 @@ export default function App() {
                         <td>{r[5] ? `${r[5]} orang` : '-'}</td>
                         <td>
                           {r[6] ? (
-                            r[6].startsWith('http') ? (
-                              <a href={r[6]} target="_blank" rel="noreferrer" className="btn-harvest btn-cream" style={{ padding: '2px 8px', fontSize: 11 }}>
-                                🔗 Buka Drive ↗
-                              </a>
-                            ) : (
-                              <span style={{ fontSize: 11, color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: 4, display: 'inline-block', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r[6]}>
-                                📁 {r[6]}
-                              </span>
-                            )
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDataDukung({
+                                id: r[1],
+                                kode: r[2],
+                                bulan: r[3],
+                                tgl: r[4],
+                                peserta: r[5],
+                                raw: r[6]
+                              })}
+                              className="btn-harvest btn-cream"
+                              style={{ padding: '3px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              title="Lihat Data Dukung"
+                            >
+                              👁️ Lihat
+                            </button>
                           ) : (
                             <span style={{ color: '#94a3b8', fontSize: 11 }}>Tidak ada</span>
                           )}
@@ -1497,6 +1515,89 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PREVIEW DATA DUKUNG (TOMBOL MATA) */}
+      {previewDataDukung && (
+        <div style={ovWrap} onClick={() => setPreviewDataDukung(null)}>
+          <div
+            className="parchment-card"
+            style={{ maxWidth: 480, width: '100%', padding: 22, boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid #EADCC2' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 18 }}>👁️</span>
+                <h3 style={{ margin: 0, color: '#5D4037', fontSize: 16, fontFamily: 'var(--font-farm)', fontWeight: 800 }}>
+                  Data Dukung Edukasi
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewDataDukung(null)}
+                style={{ border: 'none', background: 'transparent', fontSize: 18, cursor: 'pointer', color: '#8C6239', padding: '0 4px', lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Info Singkat Laporan */}
+            <div style={{ background: '#FFFDF9', border: '1px solid #E6D5B8', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#5D4037' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', rowGap: 4, columnGap: 10 }}>
+                <strong>ID Laporan:</strong> <span>{previewDataDukung.id || '-'}</span>
+                <strong>Lokus:</strong> <span>{previewDataDukung.kode || '-'}</span>
+                <strong>Tahap:</strong> <span>Bulan {previewDataDukung.bulan || '-'} ({previewDataDukung.tgl || 'Tgl belum dicatat'})</span>
+                <strong>Peserta:</strong> <span>{previewDataDukung.peserta ? `${previewDataDukung.peserta} orang` : '-'}</span>
+              </div>
+            </div>
+
+            {/* Konten Data Dukung */}
+            {previewDataDukung.raw && previewDataDukung.raw.startsWith('http') ? (
+              <div style={{ background: '#F0F9FF', border: '1.5px solid #BAE6FD', borderRadius: 10, padding: 18, textAlign: 'center' }}>
+                <div style={{ fontSize: 36, marginBottom: 8 }}>📂</div>
+                <div style={{ fontWeight: 800, fontSize: 13, color: '#0369A1', marginBottom: 4 }}>
+                  Tautan Google Drive / Cloud Terlampir
+                </div>
+                <div style={{ fontSize: 11, color: '#64748B', wordBreak: 'break-all', marginBottom: 14, background: '#FFFFFF', padding: '6px 10px', borderRadius: 6, border: '1px solid #E0F2FE' }}>
+                  {previewDataDukung.raw}
+                </div>
+                <a
+                  href={previewDataDukung.raw}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-harvest btn-green"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 12, textDecoration: 'none' }}
+                >
+                  🔗 Buka Google Drive di Tab Baru ↗
+                </a>
+              </div>
+            ) : (
+              <div style={{ background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 12, color: '#2E7D32', marginBottom: 8 }}>
+                  <span>📎</span>
+                  <span>Berkas Dokumen / Foto Terunggah:</span>
+                </div>
+                <div style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6, padding: '10px 12px', fontSize: 12, color: '#1E293B', wordBreak: 'break-word', lineHeight: 1.5 }}>
+                  {previewDataDukung.raw || '(Tidak ada keterangan file)'}
+                </div>
+                <div style={{ fontSize: 11, color: '#64748B', marginTop: 8, fontStyle: 'italic' }}>
+                  💡 Berkas data dukung tersimpan di database laporan lokus ini.
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => setPreviewDataDukung(null)}
+                className="btn-harvest btn-cream"
+                style={{ padding: '6px 16px', fontSize: 12 }}
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
