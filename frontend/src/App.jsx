@@ -58,7 +58,11 @@ async function callApi(fn, body = {}) {
 }
 
 export default function App() {
-  const [user, setUser] = useState(null)
+  // 2. Cookie login disimpan di local browser (localStorage) dan aktif terus sampai logout/reset
+  const [user, setUser] = useState(() => {
+    return localStorage.getItem('kie_mbg_user') || null
+  })
+
   const [tab, setTab] = useState('Lokus')
   const [q, setQ] = useState('')
   const [rows, setRows] = useState([])
@@ -117,9 +121,9 @@ export default function App() {
         setRows(f.map((x, i) => [i + 2, x.kode, x.nama, x.kelompok, x.jenis, x.kab, x.kec, x.lat, x.lng, x.komitmen]))
       } else if (tab === 'Laporan') {
         setRows([
-          [2, 'SK-01-B1', 'SK-01', 1, '2026-02-10', 45, 'https://drive.google.com/drive/folders/sample', 'disetujui', '2026-02-11'],
-          [3, 'SK-01-B2', 'SK-01', 2, '2026-03-15', 48, '', 'belum', ''],
-          [4, 'PS-01-B1', 'PS-01', 1, '2026-02-12', 25, 'Lampiran: 2 file foto (posyandu1.jpg, balita.png)', 'disetujui', '2026-02-12']
+          [2, 'SK-01-B1-2026', 'SK-01', 1, '2026-02-10', 45, 'https://drive.google.com/drive/folders/sample', 'disetujui', '2026-02-11'],
+          [3, 'SK-01-B2-2026', 'SK-01', 2, '2026-03-15', 48, '', 'belum', ''],
+          [4, 'PS-01-B1-2026', 'PS-01', 1, '2026-02-12', 25, '[2 File]: foto1.jpg, daftar_hadir.pdf', 'belum', '']
         ])
       } else if (tab === 'Nilai') {
         setRows([
@@ -185,14 +189,29 @@ export default function App() {
     })
   }
 
+  // Handle Login & Simpan Sesi Permanen
   const handleLogin = async () => {
+    if (!u.trim()) {
+      alert('Silakan masukkan nama petugas / username.')
+      return
+    }
     setLoading(true)
     const r = await callApi('login', { u, p })
     setLoading(false)
     if (r && r.ok) {
-      setUser(r.role || 'admin')
+      const role = r.role || u || 'admin'
+      localStorage.setItem('kie_mbg_user', role)
+      setUser(role)
     } else {
       alert('Username / password salah, atau backend belum terhubung.')
+    }
+  }
+
+  // Handle Logout & Hapus Sesi
+  const handleLogout = () => {
+    if (confirm('Keluar dari sesi login?')) {
+      localStorage.removeItem('kie_mbg_user')
+      setUser(null)
     }
   }
 
@@ -201,6 +220,23 @@ export default function App() {
     setLoading(true)
     await callApi('del', { sheet: tab, rowNum })
     loadData()
+  }
+
+  // Verifikasi / Setujui Laporan Edukasi
+  const handleApproveReport = async (row) => {
+    if (!confirm(`Setujui dan verifikasi laporan ${row[1]} (Lokus ${row[2]} Bulan ${row[3]})?`)) return
+    setLoading(true)
+    const today = new Date().toISOString().slice(0, 10)
+    // Row laporan: [id, kode_lokus, bulan, tgl_edukasi, peserta, link_foto, status, stempel]
+    const updatedRow = [row[1], row[2], row[3], row[4], row[5], row[6], 'disetujui', today]
+    const res = await callApi('upd', { sheet: 'Laporan', rowNum: row[0], row: updatedRow })
+    setLoading(false)
+    if (res && res.ok) {
+      alert(`✓ Berhasil! Laporan ${row[1]} telah diverifikasi dan disetujui.`)
+      loadData()
+    } else {
+      alert('✕ Gagal menyetujui laporan.')
+    }
   }
 
   const saveNilai = async (e) => {
@@ -226,11 +262,11 @@ export default function App() {
     
     for (const f of files) {
       if (f.size > 10 * 1024 * 1024) {
-        alert(`File ${f.name} melebihi batas 10 MB!`)
+        alert(`File "${f.name}" melebihi batas 10 MB!`)
         continue
       }
       if (!allowedTypes.includes(f.type) && !f.name.match(/\.(pdf|jpe?g|png)$/i)) {
-        alert(`File ${f.name} formatnya tidak didukung (hanya PDF, JPG, JPEG, PNG).`)
+        alert(`File "${f.name}" formatnya tidak didukung (hanya PDF, JPG, JPEG, PNG).`)
         continue
       }
       validFiles.push(f)
@@ -243,6 +279,7 @@ export default function App() {
     setUploadedFiles(prev => prev.filter((_, i) => i !== idx))
   }
 
+  // Handle Add Submit dengan notif berhasil/gagal yang jelas
   const handleAddSubmit = async (e) => {
     e.preventDefault()
     let rowValues = []
@@ -299,30 +336,45 @@ export default function App() {
     }
 
     setLoading(true)
-    await callApi('add', { sheet: tab, row: rowValues })
-    setShowAddModal(false)
-    setFormData({})
-    setUploadedFiles([])
-    loadData()
+    const res = await callApi('add', { sheet: tab, row: rowValues })
+    setLoading(false)
+
+    // 3. Notifikasi Berhasil / Gagal yang Lengkap & Jelas
+    if (res && res.ok) {
+      if (tab === 'Laporan') {
+        const fileInfo = dataDukungType === 'upload' 
+          ? `dengan ${uploadedFiles.length} file dokumen/foto terunggah` 
+          : 'dengan tautan Google Drive'
+        alert(`✓ BERHASIL DISIMPAN!\nLaporan edukasi berhasil ditambahkan ${fileInfo}.\n\nℹ️ Catatan: Status laporan adalah "Belum Diverifikasi" (menunggu persetujuan verifikator/admin).`)
+      } else {
+        alert(`✓ BERHASIL DISIMPAN!\nData baru telah tersimpan ke lembar ${tab}.`)
+      }
+      setShowAddModal(false)
+      setFormData({})
+      setUploadedFiles([])
+      loadData()
+    } else {
+      alert(`✕ GAGAL MENYIMPAN DATA!\nKeterangan: ${res?.error || 'Koneksi ke spreadsheet terputus atau format salah. Silakan coba lagi.'}`)
+    }
   }
 
-  // Clean White Loading Overlay
+  // 1. Notif saat menunggu DB: "Menghubungkan ke Database... sabar yah bestieee..."
   const Overlay = () => loading && (
     <div style={ovWrap}>
       <div style={ovBox}>
         <div style={{ width: 36, height: 36, border: '3.5px solid #E2E8F0', borderTopColor: '#2E7D32', borderRadius: '50%', margin: '0 auto 12px auto', animation: 'spin 0.8s linear infinite' }}></div>
         <div style={{ fontWeight: 700, fontSize: 15, color: '#1E293B', marginBottom: 4 }}>
-          Memuat Data...
+          Menghubungkan ke Database...
         </div>
-        <div style={{ fontSize: 12, color: '#64748B' }}>
-          Sinkronisasi dengan Google Spreadsheet
+        <div style={{ fontSize: 13, color: '#8C6239', fontWeight: 600 }}>
+          sabar yah bestieee...
         </div>
       </div>
     </div>
   )
 
   // -------------------------------------------------------------------------
-  // 1. TAMPILAN LOGIN (Menu masuk cepat sudah dihapus)
+  // 1. TAMPILAN LOGIN
   // -------------------------------------------------------------------------
   if (!user) {
     return (
@@ -421,9 +473,10 @@ export default function App() {
               <div style={{ fontSize: 12, fontWeight: 800, color: '#FFFDF7' }}>{String(user).toUpperCase()}</div>
             </div>
             <button
-              onClick={() => setUser(null)}
+              onClick={handleLogout}
               className="btn-harvest btn-danger"
               style={{ padding: '6px 12px', fontSize: 11 }}
+              title="Keluar dari akun dan bersihkan sesi"
             >
               Keluar 🚪
             </button>
@@ -509,12 +562,12 @@ export default function App() {
 
         <div className="parchment-card" style={{ padding: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#8C6239', textTransform: 'uppercase' }}>Laporan Masuk</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#8C6239', textTransform: 'uppercase' }}>Laporan Edukasi</span>
             <span style={{ fontSize: 18 }}>📋</span>
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#5D4037', marginTop: 4 }}>102 Baris</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#5D4037', marginTop: 4 }}>{rows.length} Baris</div>
           <div style={{ fontSize: 11, color: '#8C6239', marginTop: 2 }}>
-            Edukasi Bulan 1 - Bulan 3
+            Tercatat di Sistem
           </div>
         </div>
 
@@ -537,7 +590,7 @@ export default function App() {
           ))}
         </div>
 
-        {/* Global Action: 2. Ganti Hitung IKK jadi "Refresh Nilai", 3. Seed & Dummy dihapus */}
+        {/* Global Action: Refresh Nilai */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button
             onClick={() => {
@@ -769,7 +822,7 @@ export default function App() {
                       </td>
                       <td>
                         <span className={`farm-badge ${r[7] === 'disetujui' ? 'badge-green' : 'badge-gold'}`}>
-                          {r[7] === 'disetujui' ? '✓ Disetujui' : '⏳ ' + (r[7] || 'Belum')}
+                          {r[7] === 'disetujui' ? '✓ Disetujui' : '⏳ Belum Diverifikasi'}
                         </span>
                       </td>
                     </tr>
@@ -835,7 +888,7 @@ export default function App() {
                   <th>Tanggal Edukasi</th>
                   <th>Jumlah Peserta</th>
                   <th>Data Dukung / Foto</th>
-                  <th>Status</th>
+                  <th>Status Verifikasi</th>
                   <th style={{ textAlign: 'right' }}>Aksi</th>
                 </tr>
               </thead>
@@ -847,54 +900,68 @@ export default function App() {
                     </td>
                   </tr>
                 ) : (
-                  rows.map(r => (
-                    <tr key={r[0]}>
-                      <td style={{ fontFamily: 'monospace', color: '#8C6239' }}>{r[0]}</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#5D4037' }}>{r[1]}</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{r[2]}</td>
-                      <td>Bulan {r[3]}</td>
-                      <td>{r[4] || '-'}</td>
-                      <td>{r[5] ? `${r[5]} orang` : '-'}</td>
-                      <td>
-                        {r[6] ? (
-                          r[6].startsWith('http') ? (
-                            <a href={r[6]} target="_blank" rel="noreferrer" className="btn-harvest btn-cream" style={{ padding: '2px 8px', fontSize: 11 }}>
-                              🔗 Buka Drive ↗
-                            </a>
+                  rows.map(r => {
+                    const isApproved = String(r[7]).toLowerCase() === 'disetujui'
+                    return (
+                      <tr key={r[0]}>
+                        <td style={{ fontFamily: 'monospace', color: '#8C6239' }}>{r[0]}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#5D4037' }}>{r[1]}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{r[2]}</td>
+                        <td>Bulan {r[3]}</td>
+                        <td>{r[4] || '-'}</td>
+                        <td>{r[5] ? `${r[5]} orang` : '-'}</td>
+                        <td>
+                          {r[6] ? (
+                            r[6].startsWith('http') ? (
+                              <a href={r[6]} target="_blank" rel="noreferrer" className="btn-harvest btn-cream" style={{ padding: '2px 8px', fontSize: 11 }}>
+                                🔗 Buka Drive ↗
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: 11, color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: 4, display: 'inline-block', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r[6]}>
+                                📁 {r[6]}
+                              </span>
+                            )
                           ) : (
-                            <span style={{ fontSize: 11, color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: 4 }}>
-                              📁 {r[6]}
-                            </span>
-                          )
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: 11 }}>Tidak ada</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className={`farm-badge ${String(r[7]).toLowerCase() === 'disetujui' ? 'badge-green' : 'badge-gold'}`}>
-                          {String(r[7]).toLowerCase() === 'disetujui' ? '✓ Disetujui' : '⏳ ' + (r[7] || 'Belum')}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        {user !== 'kader' && (
-                          <button
-                            onClick={() => handleDelete(r[0])}
-                            className="btn-harvest btn-danger"
-                            style={{ padding: '3px 8px', fontSize: 11 }}
-                          >
-                            Hapus
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                            <span style={{ color: '#94a3b8', fontSize: 11 }}>Tidak ada</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`farm-badge ${isApproved ? 'badge-green' : 'badge-gold'}`}>
+                            {isApproved ? '✓ Disetujui' : '⏳ Belum Diverifikasi'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {/* Tombol Setujui untuk Admin/Verifikator jika status masih belum */}
+                          {user !== 'kader' && !isApproved && (
+                            <button
+                              onClick={() => handleApproveReport(r)}
+                              className="btn-harvest btn-green"
+                              style={{ padding: '3px 8px', fontSize: 11, marginRight: 4 }}
+                              title="Verifikasi dan setujui laporan ini"
+                            >
+                              ✓ Setujui
+                            </button>
+                          )}
+                          {user !== 'kader' && (
+                            <button
+                              onClick={() => handleDelete(r[0])}
+                              className="btn-harvest btn-danger"
+                              style={{ padding: '3px 8px', fontSize: 11 }}
+                            >
+                              Hapus
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
           </div>
 
           <div style={{ marginTop: 10, fontSize: 11, color: '#8C6239' }}>
-            Menampilkan {rows.length} baris laporan edukasi.
+            Menampilkan {rows.length} baris laporan edukasi. Status "Belum Diverifikasi" berarti laporan baru diinput dan menunggu persetujuan Verifikator/Admin.
           </div>
         </div>
       )}
