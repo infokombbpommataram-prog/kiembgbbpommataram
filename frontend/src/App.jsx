@@ -45,15 +45,19 @@ const FALLBACK_LOKUS = [
 async function callApi(fn, body = {}) {
   if (!API) return { ok: 0, offline: true, error: 'VITE_GAS_URL belum disetel.' }
   try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
     const r = await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ fn, ...body })
+      body: JSON.stringify({ fn, ...body }),
+      signal: controller.signal
     })
+    clearTimeout(timeoutId)
     if (!r.ok) return { ok: 0, status: r.status, error: `HTTP ${r.status}` }
     return await r.json()
   } catch (err) {
-    return { ok: 0, error: err.message }
+    return { ok: 0, error: err.name === 'AbortError' ? 'Koneksi timeout (10 detik).' : err.message }
   }
 }
 
@@ -105,20 +109,27 @@ export default function App() {
   const loadData = async () => {
     setLoading(true)
     const targetSheet = tab === 'Lokus' ? 'Lokus' : tab
-    const res = await callApi('read', { sheet: targetSheet, q: tab === 'Lokus' ? '' : q })
-    setLoading(false)
+    let res = null
+    try {
+      res = await callApi('read', { sheet: targetSheet, q: tab === 'Lokus' ? '' : q })
+    } catch (err) {
+      console.warn('loadData network warning:', err)
+    } finally {
+      setLoading(false)
+    }
 
-    if (res && res.rows) {
-      setRows(res.rows || [])
+    if (res && res.rows && res.rows.length) {
+      setRows(res.rows)
       if (tab === 'Lokus') {
         const pl = parseLokus(res.rows)
         if (pl.length) setAllLokus(pl)
       }
     } else {
-      // Fallback data
+      // Fallback data jika backend belum siap / kosong
       if (tab === 'Lokus') {
         const f = FALLBACK_LOKUS.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))
         setRows(f.map((x, i) => [i + 2, x.kode, x.nama, x.kelompok, x.jenis, x.kab, x.kec, x.lat, x.lng, x.komitmen]))
+        setAllLokus(FALLBACK_LOKUS)
       } else if (tab === 'Laporan') {
         setRows([
           [2, 'SK-01-B1-2026', 'SK-01', 1, '2026-02-10', 45, 'https://drive.google.com/drive/folders/sample', 'disetujui', '2026-02-11'],
@@ -154,16 +165,23 @@ export default function App() {
   }, [q])
 
   const refreshLokus = async () => {
-    const res = await callApi('read', { sheet: 'Lokus', q: '' })
-    if (res && res.rows && res.rows.length) {
-      setAllLokus(parseLokus(res.rows))
+    try {
+      const res = await callApi('read', { sheet: 'Lokus', q: '' })
+      if (res && res.rows && res.rows.length) {
+        setAllLokus(parseLokus(res.rows))
+      } else {
+        setAllLokus(FALLBACK_LOKUS)
+      }
+    } catch (e) {
+      setAllLokus(FALLBACK_LOKUS)
     }
   }
 
-  // Filtered Lokus sesuai Kab & Tahun
-  const filteredLokusByContext = allLokus.filter(x => {
-    const matchKab = filterKab === 'all' || String(x.kab || '').toLowerCase().includes(filterKab.toLowerCase())
-    const matchThn = filterTahun === 'all' || String(x.tahun || '').includes(filterTahun)
+  // Filtered Lokus sesuai Kab & Tahun (dengan fallback aman)
+  const currentLokusList = allLokus && allLokus.length ? allLokus : FALLBACK_LOKUS
+  const filteredLokusByContext = currentLokusList.filter(x => {
+    const matchKab = filterKab === 'all' || String(x.kab || 'Lombok Barat').toLowerCase().includes(filterKab.toLowerCase())
+    const matchThn = filterTahun === 'all' || String(x.tahun || '2026').includes(filterTahun)
     return matchKab && matchThn
   })
 
@@ -174,18 +192,24 @@ export default function App() {
   // Buka detail riwayat lokus
   const openDetail = async (kode) => {
     setLoading(true)
-    const [lap, nil, mon] = await Promise.all([
-      callApi('read', { sheet: 'Laporan', q: kode }),
-      callApi('read', { sheet: 'Nilai', q: kode }),
-      callApi('read', { sheet: 'Monev', q: kode })
-    ])
-    setLoading(false)
-    const info = allLokus.find(x => x.kode === kode) || {}
+    let lap = null, nil = null, mon = null
+    try {
+      [lap, nil, mon] = await Promise.all([
+        callApi('read', { sheet: 'Laporan', q: kode }),
+        callApi('read', { sheet: 'Nilai', q: kode }),
+        callApi('read', { sheet: 'Monev', q: kode })
+      ])
+    } catch (e) {
+      console.warn('openDetail error:', e)
+    } finally {
+      setLoading(false)
+    }
+    const info = currentLokusList.find(x => x.kode === kode) || {}
     setDetail({
       info,
-      laporan: lap.rows || [],
-      nilai: (nil.rows || [])[0] || null,
-      monev: mon.rows || []
+      laporan: lap?.rows || [],
+      nilai: (nil?.rows || [])[0] || null,
+      monev: mon?.rows || []
     })
   }
 
@@ -666,9 +690,16 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLokusByContext
-                    .filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))
-                    .map((x, idx) => {
+                  {filteredLokusByContext.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase())).length === 0 ? (
+                    <tr>
+                      <td colSpan={10} style={{ textAlign: 'center', padding: 24, color: '#8C6239' }}>
+                        Tidak ada data lokus yang sesuai dengan filter wilayah ({filterKab !== 'all' ? filterKab : 'semua'}) atau tahun ({filterTahun !== 'all' ? filterTahun : 'semua'}).
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLokusByContext
+                      .filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))
+                      .map((x, idx) => {
                       const isIntervensi = String(x.kelompok || '').toLowerCase() === 'intervensi'
                       const isLengkap = String(x.komitmen || '').toLowerCase() === 'ada'
                       return (
@@ -712,7 +743,7 @@ export default function App() {
                           </td>
                         </tr>
                       )
-                    })}
+                    }))}
                 </tbody>
               </table>
             </div>

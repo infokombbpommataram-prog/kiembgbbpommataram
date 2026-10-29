@@ -19,40 +19,56 @@ export default function FarmMap({ lokusList = [], onPick = null, selectedKab = '
     if (!mapContainerRef.current) return
     if (mapInstanceRef.current) return
 
-    const map = L.map(mapContainerRef.current, {
-      center: centerLombok,
-      zoom: 10,
-      zoomControl: true
-    })
-    mapInstanceRef.current = map
+    // Bersihkan _leaflet_id jika ada sisa render sebelumnya agar tidak throw Error
+    if (mapContainerRef.current._leaflet_id) {
+      delete mapContainerRef.current._leaflet_id
+    }
 
-    // 1. OpenStreetMap Tile Layer
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
-    })
+    let map = null
+    try {
+      map = L.map(mapContainerRef.current, {
+        center: centerLombok,
+        zoom: 10,
+        zoomControl: true
+      })
+      mapInstanceRef.current = map
 
-    // 2. Esri Satellite Tile Layer
-    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: 'Tiles &copy; Esri'
-    })
+      // 1. OpenStreetMap Tile Layer
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      })
 
-    // 3. CartoDB Voyager Clean Tile Layer
-    const voyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap & CARTO'
-    })
+      // 2. Esri Satellite Tile Layer
+      const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      })
 
-    baseLayersRef.current = { osm, sat, voyager }
-    osm.addTo(map)
+      // 3. CartoDB Voyager Clean Tile Layer
+      const voyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap & CARTO'
+      })
 
-    const markersGroup = L.layerGroup().addTo(map)
-    markersLayerRef.current = markersGroup
+      baseLayersRef.current = { osm, sat, voyager }
+      osm.addTo(map)
+
+      const markersGroup = L.layerGroup().addTo(map)
+      markersLayerRef.current = markersGroup
+    } catch (err) {
+      console.warn('Leaflet initialization warning:', err)
+    }
 
     return () => {
-      map.remove()
-      mapInstanceRef.current = null
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove()
+        } catch (e) {
+          console.warn('Leaflet cleanup warning:', e)
+        }
+        mapInstanceRef.current = null
+      }
     }
   }, [])
 
@@ -110,48 +126,53 @@ export default function FarmMap({ lokusList = [], onPick = null, selectedKab = '
     const markersGroup = markersLayerRef.current
     if (!map || !markersGroup) return
 
-    markersGroup.clearLayers()
-    const bounds = []
+    try {
+      markersGroup.clearLayers()
+      const bounds = []
 
-    filteredList.forEach(item => {
-      const lat = parseFloat(item.lat)
-      const lng = parseFloat(item.lng)
-      if (isNaN(lat) || isNaN(lng)) return
+      filteredList.forEach(item => {
+        if (!item) return
+        const lat = parseFloat(item.lat)
+        const lng = parseFloat(item.lng)
+        if (isNaN(lat) || isNaN(lng)) return
 
-      bounds.push([lat, lng])
-      const isIntervensi = String(item.kelompok || item.kel || '').toLowerCase() === 'intervensi'
-      const icon = isIntervensi ? iconIntervensi : iconKontrol
+        bounds.push([lat, lng])
+        const isIntervensi = String(item.kelompok || item.kel || '').toLowerCase() === 'intervensi'
+        const icon = isIntervensi ? iconIntervensi : iconKontrol
 
-      const marker = L.marker([lat, lng], { icon })
+        const marker = L.marker([lat, lng], { icon })
 
-      const gmapsLink = `https://www.google.com/maps?q=${lat},${lng}`
-      const popupHtml = `
-        <div style="font-family: var(--font-body); min-width: 220px; color: #1e293b; padding: 2px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-            <span style="font-size: 11px; font-weight: 700; background: ${isIntervensi ? '#dcfce7' : '#e0f2fe'}; color: ${isIntervensi ? '#15803d' : '#0369a1'}; padding: 2px 8px; border-radius: 6px;">
-              ${item.kode || 'LOKUS'} • ${isIntervensi ? 'Intervensi MBG' : 'Kontrol'}
-            </span>
+        const gmapsLink = `https://www.google.com/maps?q=${lat},${lng}`
+        const popupHtml = `
+          <div style="font-family: var(--font-body); min-width: 220px; color: #1e293b; padding: 2px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+              <span style="font-size: 11px; font-weight: 700; background: ${isIntervensi ? '#dcfce7' : '#e0f2fe'}; color: ${isIntervensi ? '#15803d' : '#0369a1'}; padding: 2px 8px; border-radius: 6px;">
+                ${item.kode || 'LOKUS'} • ${isIntervensi ? 'Intervensi MBG' : 'Kontrol'}
+              </span>
+            </div>
+            <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 800; color: #0f172a;">${item.nama || '-'}</h4>
+            <p style="margin: 2px 0; font-size: 12px; color: #475569;">📍 ${item.kab || 'Pulau Lombok'} • Kec. <strong>${item.kec || '-'}</strong></p>
+            <p style="margin: 2px 0; font-size: 12px; color: #475569;">👩‍⚕️ Kader: <strong>${item.kader || (item.hp ? `${item.hp}` : 'Kader MBG')}</strong></p>
+            <p style="margin: 2px 0; font-size: 12px; color: #475569;">🌻 Komitmen: <strong>${String(item.komitmen || '').toLowerCase() === 'ada' ? 'Lengkap (Ada)' : 'Belum Lengkap'}</strong></p>
+            <p style="margin: 4px 0 0 0; font-size: 11px; font-family: monospace; color: #64748b;">${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
+            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+              <a href="${gmapsLink}" target="_blank" rel="noreferrer" style="color: #0284c7; font-weight: 700; text-decoration: none; font-size: 11px;">
+                Buka Google Maps ↗
+              </a>
+            </div>
           </div>
-          <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 800; color: #0f172a;">${item.nama}</h4>
-          <p style="margin: 2px 0; font-size: 12px; color: #475569;">📍 ${item.kab || 'Pulau Lombok'} • Kec. <strong>${item.kec || '-'}</strong></p>
-          <p style="margin: 2px 0; font-size: 12px; color: #475569;">👩‍⚕️ Kader: <strong>${item.kader || (item.hp ? `${item.hp}` : 'Kader MBG')}</strong></p>
-          <p style="margin: 2px 0; font-size: 12px; color: #475569;">🌻 Komitmen: <strong>${String(item.komitmen || '').toLowerCase() === 'ada' ? 'Lengkap (Ada)' : 'Belum Lengkap'}</strong></p>
-          <p style="margin: 4px 0 0 0; font-size: 11px; font-family: monospace; color: #64748b;">${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
-          <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
-            <a href="${gmapsLink}" target="_blank" rel="noreferrer" style="color: #0284c7; font-weight: 700; text-decoration: none; font-size: 11px;">
-              Buka Google Maps ↗
-            </a>
-          </div>
-        </div>
-      `
-      marker.bindPopup(popupHtml)
-      marker.addTo(markersGroup)
-      item._marker = marker
-    })
+        `
+        marker.bindPopup(popupHtml)
+        marker.addTo(markersGroup)
+        item._marker = marker
+      })
 
-    // Auto fit bounds jika filter spesifik memiliki titik
-    if (bounds.length > 0 && filterKab !== 'all') {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 })
+      // Auto fit bounds jika filter spesifik memiliki titik
+      if (bounds.length > 0 && filterKab !== 'all') {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 })
+      }
+    } catch (err) {
+      console.warn('Marker render warning:', err)
     }
   }, [filteredList, filterKelompok, filterKab])
 
