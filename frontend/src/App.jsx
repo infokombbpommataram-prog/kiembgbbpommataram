@@ -43,6 +43,7 @@ export default function App() {
         <input placeholder="cari…" value={q} onChange={e => setQ(e.target.value)} style={s} />
         <button style={s} onClick={() => call('ikk').then(load)}>Hitung IKK</button>
         <button style={s} onClick={() => call('seed').then(load)}>Seed 102</button>
+        <button style={s} onClick={() => { if (confirm('Isi 12 lokus dummy?')) call('dummy').then(load) }}>Dummy</button>
       </div>
       <table border="1" cellPadding="4" style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead><tr>{head.map(h => <th key={h}>{h}</th>)}<th></th></tr></thead>

@@ -21,6 +21,7 @@ function apiDel(sheet, rowNum) { SpreadsheetApp.getActive().getSheetByName(sheet
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Monev')
     .addItem('0. Setup sheet + header', 'setupSheets')
+    .addItem('1. Isi dummy (12 lokus)', 'isiDummy')
     .addItem('Buat 102 baris laporan', 'buatLaporan')
     .addItem('Hitung N-Gain + IKK', 'hitungIKK')
     .addToUi();
@@ -109,7 +110,6 @@ function testNGain() {
 // ---- JSON API untuk frontend Cloudflare Pages (Deploy as Web App, akses Anyone) ----
 // ponytail: tanpa token per-user; tambah SECRET cek di api() saat butuh tulis publik.
 const SHEET_ALLOW = ['Lokus', 'Kader', 'Laporan', 'Nilai', 'Monev'];
-function doGet() { return HtmlService.createTemplateFromFile('Index').evaluate().setTitle('Monev KIE MBG'); }
 function doPost(e) {
   const b = JSON.parse(e.postData.contents);
   const R = r => ContentService.createTextOutput(JSON.stringify(r)).setMimeType(ContentService.MimeType.JSON);
@@ -119,5 +119,58 @@ function doPost(e) {
   if (b.fn === 'del' && SHEET_ALLOW.includes(b.sheet)) { SpreadsheetApp.getActive().getSheetByName(b.sheet).deleteRow(+b.rowNum); return R({ ok: 1 }); }
   if (b.fn === 'ikk') { hitungIKK(); return R({ ok: 1 }); }
   if (b.fn === 'seed') { buatLaporan(); return R({ ok: 1 }); }
+  if (b.fn === 'dummy') { isiDummy(); buatLaporan(); hitungIKK(); return R({ ok: 1 }); }
   return R({ ok: 0, err: 'fn?' });
+}
+
+// Isi 12 lokus dummy + kader + nilai + 3 monev. Idempotent (skip jika Lokus ada isi).
+// ponytail: dummy statis; ganti generator acak saat butuh volume uji.
+function isiDummy() {
+  const ss = SpreadsheetApp.getActive();
+  setupSheets();
+  const lok = ss.getSheetByName(SHEETS.LOKUS);
+  if (lok.getLastRow() > 1) return;
+  const L = [
+    ['SK-01', 'SDN 1 Mataram', 'intervensi', 'sekolah', 'Mataram', 'Ampenan', -8.57, 116.07, 'ada'],
+    ['SK-02', 'SDN 2 Mataram', 'intervensi', 'sekolah', 'Mataram', 'Sekarbela', -8.58, 116.08, 'ada'],
+    ['SK-03', 'MI NW Mataram', 'intervensi', 'sekolah', 'Mataram', 'Selaparang', -8.59, 116.09, 'ada'],
+    ['SK-04', 'SMPN 1 Lobar', 'kontrol', 'sekolah', 'Lobar', 'Gerung', -8.6, 116.1, 'belum'],
+    ['PS-01', 'Posyandu Mawar', 'intervensi', 'posyandu', 'Mataram', 'Ampenan', -8.571, 116.071, 'ada'],
+    ['PS-02', 'Posyandu Melati', 'intervensi', 'posyandu', 'Mataram', 'Ampenan', -8.572, 116.072, 'ada'],
+    ['PS-03', 'Posyandu Kenanga', 'intervensi', 'posyandu', 'Lobar', 'Gerung', -8.573, 116.073, 'ada'],
+    ['PS-04', 'Posyandu Anggrek', 'intervensi', 'posyandu', 'Lobar', 'Gerung', -8.574, 116.074, 'ada'],
+    ['PS-05', 'Posyandu Cempaka', 'intervensi', 'posyandu', 'Lobar', 'Narmada', -8.575, 116.075, 'ada'],
+    ['PS-06', 'Posyandu Dahlia', 'intervensi', 'posyandu', 'Loteng', 'Praya', -8.576, 116.076, 'ada'],
+    ['PS-07', 'Posyandu Flamboyan', 'kontrol', 'posyandu', 'Loteng', 'Praya', -8.577, 116.077, 'belum'],
+    ['PS-08', 'Posyandu Kamboja', 'kontrol', 'posyandu', 'Loteng', 'Pujut', -8.578, 116.078, 'belum']
+  ];
+  lok.getRange(2, 1, L.length, L[0].length).setValues(L);
+  const K = [
+    ['Siti A', '+628111', 'SK-01,SK-02', 60, 85],
+    ['Budi B', '+628222', 'SK-03', 55, 80],
+    ['Rina C', '+628333', 'PS-01,PS-02,PS-03', 50, 78],
+    ['Dewi D', '+628444', 'PS-04,PS-05,PS-06', 52, 75]
+  ];
+  ss.getSheetByName('Kader').getRange(2, 1, K.length, K[0].length).setValues(K);
+  const N = [
+    ['SK-01', 'intervensi', 55, 80, 100, '', ''],
+    ['SK-02', 'intervensi', 60, 82, 100, '', ''],
+    ['SK-03', 'intervensi', 50, 70, 100, '', ''],
+    ['SK-04', 'kontrol', 58, 62, 100, '', ''],
+    ['PS-01', 'intervensi', 48, 75, 20, '', ''],
+    ['PS-02', 'intervensi', 52, 72, 20, '', ''],
+    ['PS-03', 'intervensi', 45, 68, 20, '', ''],
+    ['PS-04', 'intervensi', 55, 70, 20, '', ''],
+    ['PS-05', 'intervensi', 50, 65, 20, '', ''],
+    ['PS-06', 'intervensi', 47, 69, 20, '', ''],
+    ['PS-07', 'kontrol', 51, 55, 20, '', ''],
+    ['PS-08', 'kontrol', 49, 53, 20, '', '']
+  ];
+  ss.getSheetByName(SHEETS.NILAI).getRange(2, 1, N.length, N[0].length).setValues(N);
+  const M = [
+    ['2027-02-01', 'SK-01', 'Poster belum terpasang', 'Pasang sebelum B2', 'selesai'],
+    ['2027-02-05', 'PS-01', 'Peserta sepi', 'Libatkan kader PKK', 'terbuka'],
+    ['2027-02-10', 'PS-04', 'Jadwal bentrok posyandu', 'Geser ke Sabtu', 'terbuka']
+  ];
+  ss.getSheetByName(SHEETS.MONEV).getRange(2, 1, M.length, M[0].length).setValues(M);
 }
