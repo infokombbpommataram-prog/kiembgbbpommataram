@@ -131,18 +131,18 @@ function isiDummy() {
   const lok = ss.getSheetByName(SHEETS.LOKUS);
   if (lok.getLastRow() > 1) return;
   const L = [
-    ['SK-01', 'SDN 1 Mataram', 'intervensi', 'sekolah', 'Mataram', 'Ampenan', -8.57, 116.07, 'ada'],
-    ['SK-02', 'SDN 2 Mataram', 'intervensi', 'sekolah', 'Mataram', 'Sekarbela', -8.58, 116.08, 'ada'],
-    ['SK-03', 'MI NW Mataram', 'intervensi', 'sekolah', 'Mataram', 'Selaparang', -8.59, 116.09, 'ada'],
-    ['SK-04', 'SMPN 1 Lobar', 'kontrol', 'sekolah', 'Lobar', 'Gerung', -8.6, 116.1, 'belum'],
-    ['PS-01', 'Posyandu Mawar', 'intervensi', 'posyandu', 'Mataram', 'Ampenan', -8.571, 116.071, 'ada'],
-    ['PS-02', 'Posyandu Melati', 'intervensi', 'posyandu', 'Mataram', 'Ampenan', -8.572, 116.072, 'ada'],
-    ['PS-03', 'Posyandu Kenanga', 'intervensi', 'posyandu', 'Lobar', 'Gerung', -8.573, 116.073, 'ada'],
-    ['PS-04', 'Posyandu Anggrek', 'intervensi', 'posyandu', 'Lobar', 'Gerung', -8.574, 116.074, 'ada'],
-    ['PS-05', 'Posyandu Cempaka', 'intervensi', 'posyandu', 'Lobar', 'Narmada', -8.575, 116.075, 'ada'],
-    ['PS-06', 'Posyandu Dahlia', 'intervensi', 'posyandu', 'Loteng', 'Praya', -8.576, 116.076, 'ada'],
-    ['PS-07', 'Posyandu Flamboyan', 'kontrol', 'posyandu', 'Loteng', 'Praya', -8.577, 116.077, 'belum'],
-    ['PS-08', 'Posyandu Kamboja', 'kontrol', 'posyandu', 'Loteng', 'Pujut', -8.578, 116.078, 'belum']
+    ['SK-01', 'SDN 1 Gerung', 'intervensi', 'sekolah', 'Lombok Barat', 'Gerung', -8.732, 116.115, 'ada'],
+    ['SK-02', 'SDN 2 Gerung', 'intervensi', 'sekolah', 'Lombok Barat', 'Gerung', -8.735, 116.118, 'ada'],
+    ['SK-03', 'MI NW Kediri', 'intervensi', 'sekolah', 'Lombok Barat', 'Kediri', -8.68, 116.13, 'ada'],
+    ['SK-04', 'SMPN 1 Narmada', 'kontrol', 'sekolah', 'Lombok Barat', 'Narmada', -8.62, 116.2, 'belum'],
+    ['PS-01', 'Posyandu Mawar Gerung', 'intervensi', 'posyandu', 'Lombok Barat', 'Gerung', -8.733, 116.116, 'ada'],
+    ['PS-02', 'Posyandu Melati Gerung', 'intervensi', 'posyandu', 'Lombok Barat', 'Gerung', -8.736, 116.119, 'ada'],
+    ['PS-03', 'Posyandu Kenanga Kediri', 'intervensi', 'posyandu', 'Lombok Barat', 'Kediri', -8.681, 116.131, 'ada'],
+    ['PS-04', 'Posyandu Anggrek Kediri', 'intervensi', 'posyandu', 'Lombok Barat', 'Kediri', -8.683, 116.133, 'ada'],
+    ['PS-05', 'Posyandu Cempaka Narmada', 'intervensi', 'posyandu', 'Lombok Barat', 'Narmada', -8.621, 116.201, 'ada'],
+    ['PS-06', 'Posyandu Dahlia Narmada', 'intervensi', 'posyandu', 'Lombok Barat', 'Narmada', -8.623, 116.203, 'ada'],
+    ['PS-07', 'Posyandu Flamboyan Lembar', 'kontrol', 'posyandu', 'Lombok Barat', 'Lembar', -8.75, 116.07, 'belum'],
+    ['PS-08', 'Posyandu Kamboja Sekotong', 'kontrol', 'posyandu', 'Lombok Barat', 'Sekotong', -8.78, 116.05, 'belum']
   ];
   lok.getRange(2, 1, L.length, L[0].length).setValues(L);
   const K = [
