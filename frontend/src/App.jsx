@@ -9,19 +9,38 @@ const TABS = [
   { id: 'Monev', label: '🔎 Patroli Monev', icon: '🔎' }
 ]
 
+const KAB_LIST = [
+  { id: 'all', label: '🌐 Seluruh Pulau Lombok' },
+  { id: 'Lombok Barat', label: 'Kab. Lombok Barat' },
+  { id: 'Kota Mataram', label: 'Kota Mataram' },
+  { id: 'Lombok Tengah', label: 'Kab. Lombok Tengah' },
+  { id: 'Lombok Timur', label: 'Kab. Lombok Timur' },
+  { id: 'Lombok Utara', label: 'Kab. Lombok Utara' }
+]
+
+const TAHUN_LIST = ['all', '2026', '2027', '2028', '2029']
+
+// Fallback data mencakup berbagai Kab/Kota di Pulau Lombok
 const FALLBACK_LOKUS = [
-  { kode: 'SK-01', nama: 'SDN 1 Gerung', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.732, lng: 116.115, kader: 'Siti A', hp: '+628111', komitmen: 'ada' },
-  { kode: 'SK-02', nama: 'SDN 2 Gerung', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.735, lng: 116.118, kader: 'Siti A', hp: '+628111', komitmen: 'ada' },
-  { kode: 'SK-03', nama: 'MI NW Kediri', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Kediri', lat: -8.680, lng: 116.130, kader: 'Budi B', hp: '+628222', komitmen: 'ada' },
-  { kode: 'SK-04', nama: 'SMPN 1 Narmada', kelompok: 'kontrol', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Narmada', lat: -8.620, lng: 116.200, kader: 'Budi B', hp: '+628222', komitmen: 'belum' },
-  { kode: 'PS-01', nama: 'Posyandu Mawar Gerung', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.733, lng: 116.116, kader: 'Rina C', hp: '+628333', komitmen: 'ada' },
-  { kode: 'PS-02', nama: 'Posyandu Melati Gerung', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.736, lng: 116.119, kader: 'Rina C', hp: '+628333', komitmen: 'ada' },
-  { kode: 'PS-03', nama: 'Posyandu Kenanga Kediri', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Kediri', lat: -8.681, lng: 116.131, kader: 'Rina C', hp: '+628333', komitmen: 'ada' },
-  { kode: 'PS-04', nama: 'Posyandu Anggrek Kediri', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Kediri', lat: -8.683, lng: 116.133, kader: 'Dewi D', hp: '+628444', komitmen: 'ada' },
-  { kode: 'PS-05', nama: 'Posyandu Cempaka Narmada', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Narmada', lat: -8.621, lng: 116.201, kader: 'Dewi D', hp: '+628444', komitmen: 'ada' },
-  { kode: 'PS-06', nama: 'Posyandu Dahlia Narmada', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Narmada', lat: -8.623, lng: 116.203, kader: 'Dewi D', hp: '+628444', komitmen: 'ada' },
-  { kode: 'PS-07', nama: 'Posyandu Flamboyan Lembar', kelompok: 'kontrol', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Lembar', lat: -8.750, lng: 116.070, kader: 'Dewi D', hp: '+628444', komitmen: 'belum' },
-  { kode: 'PS-08', nama: 'Posyandu Kamboja Sekotong', kelompok: 'kontrol', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Sekotong', lat: -8.780, lng: 116.050, kader: 'Dewi D', hp: '+628444', komitmen: 'belum' }
+  // Kab. Lombok Barat (Tahun 2026 / 2027)
+  { kode: 'SK-01', nama: 'SDN 1 Gerung', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.732, lng: 116.115, tahun: '2026', kader: 'Siti A', hp: '+628111', komitmen: 'ada' },
+  { kode: 'SK-02', nama: 'SDN 2 Gerung', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.735, lng: 116.118, tahun: '2026', kader: 'Siti A', hp: '+628111', komitmen: 'ada' },
+  { kode: 'SK-03', nama: 'MI NW Kediri', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Kediri', lat: -8.680, lng: 116.130, tahun: '2026', kader: 'Budi B', hp: '+628222', komitmen: 'ada' },
+  { kode: 'SK-04', nama: 'SMPN 1 Narmada', kelompok: 'kontrol', jenis: 'sekolah', kab: 'Lombok Barat', kec: 'Narmada', lat: -8.620, lng: 116.200, tahun: '2026', kader: 'Budi B', hp: '+628222', komitmen: 'belum' },
+  { kode: 'PS-01', nama: 'Posyandu Mawar Gerung', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.733, lng: 116.116, tahun: '2026', kader: 'Rina C', hp: '+628333', komitmen: 'ada' },
+  { kode: 'PS-02', nama: 'Posyandu Melati Gerung', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Gerung', lat: -8.736, lng: 116.119, tahun: '2026', kader: 'Rina C', hp: '+628333', komitmen: 'ada' },
+  { kode: 'PS-03', nama: 'Posyandu Kenanga Kediri', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Kediri', lat: -8.681, lng: 116.131, tahun: '2026', kader: 'Rina C', hp: '+628333', komitmen: 'ada' },
+  { kode: 'PS-07', nama: 'Posyandu Flamboyan Lembar', kelompok: 'kontrol', jenis: 'posyandu', kab: 'Lombok Barat', kec: 'Lembar', lat: -8.750, lng: 116.070, tahun: '2026', kader: 'Dewi D', hp: '+628444', komitmen: 'belum' },
+  
+  // Kota Mataram (Tahun 2027 lokus berikutnya)
+  { kode: 'SK-M01', nama: 'SDN 6 Mataram', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Kota Mataram', kec: 'Mataram', lat: -8.583, lng: 116.105, tahun: '2027', kader: 'Hj. Fatimah', hp: '+628555', komitmen: 'ada' },
+  { kode: 'PS-M01', nama: 'Posyandu Cempaka Ampenan', kelompok: 'intervensi', jenis: 'posyandu', kab: 'Kota Mataram', kec: 'Ampenan', lat: -8.572, lng: 116.082, tahun: '2027', kader: 'Ibu Nur', hp: '+628666', komitmen: 'ada' },
+  
+  // Kab. Lombok Tengah (Tahun 2028 lokus berikutnya)
+  { kode: 'SK-T01', nama: 'SDN 1 Praya', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Tengah', kec: 'Praya', lat: -8.707, lng: 116.273, tahun: '2028', kader: 'Pak Lalu', hp: '+628777', komitmen: 'ada' },
+  
+  // Kab. Lombok Timur
+  { kode: 'SK-E01', nama: 'SDN 1 Selong', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Timur', kec: 'Selong', lat: -8.650, lng: 116.533, tahun: '2028', kader: 'Ibu Baiq', hp: '+628888', komitmen: 'ada' }
 ]
 
 async function callApi(fn, body = {}) {
@@ -50,6 +69,10 @@ export default function App() {
   const [u, setU] = useState('')
   const [p, setP] = useState('')
   
+  // Filter Global Multi-Tahun & Multi-Kabupaten
+  const [filterKab, setFilterKab] = useState('all')
+  const [filterTahun, setFilterTahun] = useState('all')
+
   // Detail lokus: { info, laporan, nilai, monev }
   const [detail, setDetail] = useState(null)
   
@@ -58,21 +81,18 @@ export default function App() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [formData, setFormData] = useState({})
 
-  const totalLokus = allLokus.length
-  const intervensiCount = allLokus.filter(x => String(x.kelompok || '').toLowerCase() === 'intervensi').length
-  const kontrolCount = totalLokus - intervensiCount
-
   const parseLokus = rs => (rs || []).map(r => ({
     _row: r[0],
     kode: r[1],
     nama: r[2],
     kelompok: r[3],
     jenis: r[4],
-    kab: r[5],
+    kab: r[5] || 'Lombok Barat',
     kec: r[6],
     lat: parseFloat(r[7]),
     lng: parseFloat(r[8]),
-    komitmen: r[9]
+    komitmen: r[9],
+    tahun: r[10] || '2026'
   }))
 
   const loadData = async () => {
@@ -89,7 +109,7 @@ export default function App() {
         if (pl.length) setAllLokus(pl)
       }
     } else {
-      // Offline fallback mode
+      // Fallback mode
       if (tab === 'Lokus') {
         setHead(['_row', 'kode', 'nama', 'kelompok', 'jenis', 'kab', 'kec', 'lat', 'lng', 'komitmen'])
         const f = FALLBACK_LOKUS.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))
@@ -97,9 +117,9 @@ export default function App() {
       } else if (tab === 'Laporan') {
         setHead(['_row', 'id', 'kode_lokus', 'bulan', 'tgl_edukasi', 'peserta', 'link_foto', 'status', 'stempel'])
         setRows([
-          [2, 'SK-01-B1', 'SK-01', 1, '2027-02-10', 45, 'https://drive.google.com', 'disetujui', '2027-02-11'],
-          [3, 'SK-01-B2', 'SK-01', 2, '2027-03-15', 48, '', 'belum', ''],
-          [4, 'PS-01-B1', 'PS-01', 1, '2027-02-12', 25, 'https://drive.google.com', 'disetujui', '2027-02-12']
+          [2, 'SK-01-B1', 'SK-01', 1, '2026-02-10', 45, 'https://drive.google.com', 'disetujui', '2026-02-11'],
+          [3, 'SK-01-B2', 'SK-01', 2, '2026-03-15', 48, '', 'belum', ''],
+          [4, 'PS-01-B1', 'PS-01', 1, '2026-02-12', 25, 'https://drive.google.com', 'disetujui', '2026-02-12']
         ])
       } else if (tab === 'Nilai') {
         setHead(['_row', 'kode_lokus', 'kelompok', 'pre_mean', 'post_mean', 'n', 'g', 'meningkat'])
@@ -111,8 +131,8 @@ export default function App() {
       } else if (tab === 'Monev') {
         setHead(['_row', 'tgl', 'kode_lokus', 'temuan', 'tindak_lanjut', 'status'])
         setRows([
-          [2, '2027-02-01', 'SK-01', 'Poster PMT belum terpasang', 'Pasang sebelum edukasi B2', 'selesai'],
-          [3, '2027-02-05', 'PS-01', 'Kehadiran peserta posyandu minim', 'Libatkan kader PKK desa', 'terbuka']
+          [2, '2026-02-01', 'SK-01', 'Poster PMT belum terpasang', 'Pasang sebelum edukasi B2', 'selesai'],
+          [3, '2026-02-05', 'PS-01', 'Kehadiran peserta posyandu minim', 'Libatkan kader PKK desa', 'terbuka']
         ])
       }
     }
@@ -137,6 +157,17 @@ export default function App() {
       setAllLokus(parseLokus(res.rows))
     }
   }
+
+  // Filtered Lokus sesuai Kab & Tahun
+  const filteredLokusByContext = allLokus.filter(x => {
+    const matchKab = filterKab === 'all' || String(x.kab || '').toLowerCase().includes(filterKab.toLowerCase())
+    const matchThn = filterTahun === 'all' || String(x.tahun || '').includes(filterTahun)
+    return matchKab && matchThn
+  })
+
+  const totalFilteredLokus = filteredLokusByContext.length
+  const intervensiFilteredCount = filteredLokusByContext.filter(x => String(x.kelompok || '').toLowerCase() === 'intervensi').length
+  const kontrolFilteredCount = totalFilteredLokus - intervensiFilteredCount
 
   // Buka detail riwayat lokus
   const openDetail = async (kode) => {
@@ -233,7 +264,7 @@ export default function App() {
     loadData()
   }
 
-  // Clean White Loading Overlay (Bukan coklat, blur putih bersih)
+  // Clean White Loading Overlay
   const Overlay = () => loading && (
     <div style={ovWrap}>
       <div style={ovBox}>
@@ -266,7 +297,7 @@ export default function App() {
             Sistem Monitoring dan Evaluasi KIE MBG
           </h2>
           <p style={{ fontSize: 12, color: '#F5EBE6', margin: 0 }}>
-            Penerima Manfaat Program Makan Bergizi Gratis • Kab. Lombok Barat
+            Wilayah Kerja: Seluruh Pulau Lombok (Provinsi NTB)
           </p>
         </div>
 
@@ -342,7 +373,7 @@ export default function App() {
       <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
 
       {/* Top Banner BPOM */}
-      <div className="wood-board" style={{ padding: '16px 20px', marginBottom: 16 }}>
+      <div className="wood-board" style={{ padding: '16px 20px', marginBottom: 14 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -350,12 +381,12 @@ export default function App() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ background: '#FFE8A3', color: '#5D4037', fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 20 }}>
-                  Wilayah: Kab. Lombok Barat (NTB)
+                  Wilayah Kerja: Seluruh Pulau Lombok
                 </span>
-                <span style={{ fontSize: 11, color: '#FFE8A3' }}>Balai Besar POM di Mataram</span>
+                <span style={{ fontSize: 11, color: '#FFE8A3' }}>BBPOM di Mataram (Prov. NTB)</span>
               </div>
               <h1 style={{ fontSize: 17, margin: '2px 0 0 0', color: '#FFFDF7', lineHeight: 1.3, fontFamily: 'var(--font-farm)' }}>
-                Sistem Monitoring & Evaluasi KIE MBG
+                Sistem Monitoring & Evaluasi KIE MBG Multi-Tahun
               </h1>
             </div>
           </div>
@@ -378,17 +409,56 @@ export default function App() {
         </div>
       </div>
 
-      {/* KPI Overview Cards (Lengkap & Proporsional) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginBottom: 16 }}>
+      {/* MULTI-YEAR & MULTI-KABUPATEN FILTER BAR */}
+      <div className="parchment-card" style={{ padding: '10px 16px', marginBottom: 14, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#5D4037' }}>📅 Tahun Anggaran:</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {TAHUN_LIST.map(th => (
+              <button
+                key={th}
+                onClick={() => setFilterTahun(th)}
+                className={`btn-harvest ${filterTahun === th ? 'btn-green' : 'btn-cream'}`}
+                style={{ padding: '3px 8px', fontSize: 11 }}
+              >
+                {th === 'all' ? 'Semua Tahun' : th}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#5D4037' }}>📍 Wilayah Intervensi:</span>
+          <select
+            className="farm-input"
+            style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#5D4037', minWidth: 200 }}
+            value={filterKab}
+            onChange={e => setFilterKab(e.target.value)}
+          >
+            {KAB_LIST.map(k => (
+              <option key={k.id} value={k.id}>{k.label}</option>
+            ))}
+          </select>
+        </div>
+
+      </div>
+
+      {/* KPI Overview Cards (Dinamis Sesuai Filter Wilayah & Tahun) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginBottom: 14 }}>
         
         <div className="parchment-card" style={{ padding: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#8C6239', textTransform: 'uppercase' }}>Lokus Dipantau</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#8C6239', textTransform: 'uppercase' }}>
+              Lokus Terdata {filterKab !== 'all' ? `(${filterKab})` : ''}
+            </span>
             <span style={{ fontSize: 18 }}>📍</span>
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#5D4037', marginTop: 4 }}>{totalLokus} Lokus</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#5D4037', marginTop: 4 }}>
+            {totalFilteredLokus} Lokus
+          </div>
           <div style={{ fontSize: 11, color: '#2E7D32', fontWeight: 700, marginTop: 2 }}>
-            🌱 {intervensiCount} Intervensi • 🏫 {kontrolCount} Kontrol
+            🌱 {intervensiFilteredCount} Intervensi • 🏫 {kontrolFilteredCount} Kontrol
           </div>
         </div>
 
@@ -399,7 +469,7 @@ export default function App() {
           </div>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#5D4037', marginTop: 4 }}>28 / 34</div>
           <div style={{ fontSize: 11, color: '#F57F17', fontWeight: 700, marginTop: 2 }}>
-            Target Minimal: 34 Lokus
+            Target Siklus: Minimal 34 Lokus
           </div>
         </div>
 
@@ -421,7 +491,7 @@ export default function App() {
           </div>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#5D4037', marginTop: 4 }}>102 Baris</div>
           <div style={{ fontSize: 11, color: '#8C6239', marginTop: 2 }}>
-            Target Edukasi Bulan 1 - 3
+            Edukasi Bulan 1 - Bulan 3
           </div>
         </div>
 
@@ -461,11 +531,11 @@ export default function App() {
             🌱 Seed 102
           </button>
           <button
-            onClick={() => { if (confirm('Isi 12 lokus dummy Lombok Barat?')) { setLoading(true); callApi('dummy').then(() => { setLoading(false); loadData(); alert('12 Lokus berhasil diatur!') }) } }}
+            onClick={() => { if (confirm('Isi 12 lokus dummy?')) { setLoading(true); callApi('dummy').then(() => { setLoading(false); loadData(); alert('Data lokus berhasil diatur!') }) } }}
             className="btn-harvest btn-wood"
             style={{ padding: '6px 12px', fontSize: 12 }}
           >
-            🎲 Dummy 12
+            🎲 Dummy Lokus
           </button>
         </div>
 
@@ -476,9 +546,10 @@ export default function App() {
       {/* --------------------------------------------------------------------- */}
       {tab === 'Lokus' && !detail && (
         <div>
-          {/* Peta OpenStreetMap Lombok Barat */}
+          {/* Peta OpenStreetMap Seluruh Pulau Lombok */}
           <FarmMap
-            lokusList={allLokus.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))}
+            lokusList={filteredLokusByContext.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))}
+            selectedKab={filterKab}
             onPick={openDetail}
           />
 
@@ -496,7 +567,7 @@ export default function App() {
                 />
               </div>
               <button
-                onClick={() => { setFormData({}); setShowAddModal(true) }}
+                onClick={() => { setFormData({ kab: filterKab !== 'all' ? filterKab : 'Lombok Barat', tahun: filterTahun !== 'all' ? filterTahun : '2026' }); setShowAddModal(true) }}
                 className="btn-harvest btn-wood"
               >
                 + Tambah Lokus Baru
@@ -511,14 +582,15 @@ export default function App() {
                     <th>Nama Lokus</th>
                     <th>Kelompok</th>
                     <th>Jenis</th>
-                    <th>Wilayah</th>
-                    <th>Koordinat</th>
+                    <th>Kabupaten/Kota</th>
+                    <th>Kecamatan</th>
+                    <th>Koordinat (lat, lng)</th>
                     <th>Komitmen</th>
                     <th style={{ textAlign: 'right' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {allLokus
+                  {filteredLokusByContext
                     .filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase()))
                     .map(x => {
                       const isIntervensi = String(x.kelompok || '').toLowerCase() === 'intervensi'
@@ -534,8 +606,8 @@ export default function App() {
                               {isIntervensi ? '🌱 Intervensi' : '🏫 Kontrol'}
                             </span>
                           </td>
-                          <td style={{ textTransform: 'capitalize' }}>{x.jenis}</td>
-                          <td>{x.kec}, {x.kab}</td>
+                          <td style={{ fontWeight: 600 }}>{x.kab}</td>
+                          <td>{x.kec}</td>
                           <td style={{ fontFamily: 'monospace', fontSize: 11, color: '#64748B' }}>
                             {x.lat ? `${parseFloat(x.lat).toFixed(3)}, ${parseFloat(x.lng).toFixed(3)}` : '-'}
                           </td>
@@ -570,7 +642,7 @@ export default function App() {
             </div>
 
             <div style={{ marginTop: 10, fontSize: 11, color: '#8C6239' }}>
-              Menampilkan {allLokus.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase())).length} lokus terdata di Kabupaten Lombok Barat.
+              Menampilkan {filteredLokusByContext.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q.toLowerCase())).length} lokus terdata di {filterKab === 'all' ? 'seluruh Pulau Lombok' : filterKab}.
             </div>
           </div>
         </div>
@@ -592,7 +664,7 @@ export default function App() {
                 {detail.info.nama} ({detail.info.kode})
               </h3>
               <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#8C6239' }}>
-                Jenis: <strong style={{ textTransform: 'capitalize' }}>{detail.info.jenis}</strong> • Kelompok: <strong>{detail.info.kelompok}</strong> • Wilayah: <strong>Kec. {detail.info.kec}, {detail.info.kab}</strong> • Komitmen: <strong>{detail.info.komitmen}</strong>
+                Jenis: <strong style={{ textTransform: 'capitalize' }}>{detail.info.jenis}</strong> • Kelompok: <strong>{detail.info.kelompok}</strong> • Wilayah: <strong>{detail.info.kab}, Kec. {detail.info.kec}</strong> • Komitmen: <strong>{detail.info.komitmen}</strong>
               </p>
             </div>
             {detail.info.lat && detail.info.lng && (
@@ -798,7 +870,7 @@ export default function App() {
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* MODAL: EDIT NILAI (Clean White Overlay)                              */}
+      {/* MODAL: EDIT NILAI                                                    */}
       {/* --------------------------------------------------------------------- */}
       {editNilai && (
         <div style={ovWrap} onClick={() => setEditNilai(null)}>
@@ -856,7 +928,7 @@ export default function App() {
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* MODAL: TAMBAH DATA (Clean White Overlay)                             */}
+      {/* MODAL: TAMBAH DATA (Multi-Kabupaten Dropdown)                        */}
       {/* --------------------------------------------------------------------- */}
       {showAddModal && (
         <div style={ovWrap} onClick={() => setShowAddModal(false)}>
@@ -869,11 +941,27 @@ export default function App() {
                 <>
                   <div>
                     <label style={lb}>Kode Lokus:</label>
-                    <input className="farm-input" style={{ width: '100%' }} placeholder="SK-05 / PS-09" value={formData.kode || ''} onChange={e => setFormData({ ...formData, kode: e.target.value })} required />
+                    <input className="farm-input" style={{ width: '100%' }} placeholder="Contoh: SK-05 / PS-09" value={formData.kode || ''} onChange={e => setFormData({ ...formData, kode: e.target.value })} required />
                   </div>
                   <div>
                     <label style={lb}>Nama Sekolah / Posyandu:</label>
                     <input className="farm-input" style={{ width: '100%' }} placeholder="Nama Lokus..." value={formData.nama || ''} onChange={e => setFormData({ ...formData, nama: e.target.value })} required />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div>
+                      <label style={lb}>Kabupaten / Kota di Lombok:</label>
+                      <select className="farm-input" style={{ width: '100%' }} value={formData.kab || 'Lombok Barat'} onChange={e => setFormData({ ...formData, kab: e.target.value })}>
+                        <option value="Lombok Barat">Kab. Lombok Barat</option>
+                        <option value="Kota Mataram">Kota Mataram</option>
+                        <option value="Lombok Tengah">Kab. Lombok Tengah</option>
+                        <option value="Lombok Timur">Kab. Lombok Timur</option>
+                        <option value="Lombok Utara">Kab. Lombok Utara</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lb}>Kecamatan:</label>
+                      <input className="farm-input" style={{ width: '100%' }} placeholder="Gerung / Mataram / dll" value={formData.kec || ''} onChange={e => setFormData({ ...formData, kec: e.target.value })} required />
+                    </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     <div>
@@ -971,7 +1059,7 @@ export default function App() {
 const lb = { display: 'block', fontSize: 11, fontWeight: 700, color: '#8C6239', marginBottom: 3 }
 const h4 = { color: '#5D4037', margin: '14px 0 8px 0', fontSize: 13, fontWeight: 800 }
 
-// Clean White Overlay & Card (Bukan coklat!)
+// Clean White Overlay & Card (Bukan coklat)
 const ovWrap = {
   position: 'fixed',
   inset: 0,
