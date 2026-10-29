@@ -1,6 +1,7 @@
 /** Monev KIE MBG — GAS minimal. Sheet-only, tanpa server. */
 
 const SHEETS = { CFG: 'Config', LOKUS: 'Lokus', LAPOR: 'Laporan', NILAI: 'Nilai', MONEV: 'Monev' };
+const FOLDER_DRIVE_ID = '1iwQrhho-ohI9V6FPkN3SwtGlmE-vSdAX'; // Folder Google Drive Dokumentasi KIE MBG
 // ponytail: ganti PropertiesService saat >20 user (kuota baca).
 const USERS = { admin: { pass: 'ganti-ini', role: 'admin' }, verif: { pass: 'ganti-ini', role: 'verifikator' }, kader: { pass: 'ganti-ini', role: 'kader' } };
 
@@ -121,7 +122,29 @@ function doPost(e) {
   if (b.fn === 'ikk') { hitungIKK(); return R({ ok: 1 }); }
   if (b.fn === 'seed') { buatLaporan(); return R({ ok: 1 }); }
   if (b.fn === 'dummy') { isiDummy(); buatLaporan(); hitungIKK(); return R({ ok: 1 }); }
+  if (b.fn === 'upload') return R(apiUpload(b.base64, b.name, b.mimeType));
   return R({ ok: 0, err: 'fn?' });
+}
+
+// Simpan berkas upload langsung ke Google Drive Folder KIE MBG
+function apiUpload(base64Data, fileName, mimeType) {
+  try {
+    const folder = DriveApp.getFolderById(FOLDER_DRIVE_ID);
+    const decoded = Utilities.base64Decode(base64Data);
+    const blob = Utilities.newBlob(decoded, mimeType || 'application/octet-stream', fileName);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const fileId = file.getId();
+    return {
+      ok: 1,
+      id: fileId,
+      name: fileName,
+      url: file.getUrl(),
+      downloadUrl: 'https://drive.google.com/uc?export=download&id=' + fileId
+    };
+  } catch (err) {
+    return { ok: 0, error: err.message };
+  }
 }
 
 // Isi 12 lokus dummy + kader + nilai + 3 monev. Idempotent (skip jika Lokus ada isi).

@@ -42,6 +42,34 @@ const FALLBACK_LOKUS = [
   { kode: 'SK-E01', nama: 'SDN 1 Selong', kelompok: 'intervensi', jenis: 'sekolah', kab: 'Lombok Timur', kec: 'Selong', lat: -8.650, lng: 116.533, tahun: '2028', kader: 'Ibu Baiq', hp: '+628888', komitmen: 'ada' }
 ]
 
+const MAIN_DRIVE_FOLDER = 'https://drive.google.com/drive/folders/1iwQrhho-ohI9V6FPkN3SwtGlmE-vSdAX'
+
+function parseDriveLinks(raw = '') {
+  const urlRegex = /(https?:\/\/[^\s,]+)/g
+  const matches = String(raw || '').match(urlRegex)
+  if (!matches || !matches.length) return null
+
+  return matches.map(url => {
+    let downloadUrl = url
+    let fileId = null
+    const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+    if (fileMatch) fileId = fileMatch[1]
+    else if (idMatch) fileId = idMatch[1]
+
+    if (fileId) {
+      downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
+    }
+
+    return {
+      url,
+      downloadUrl,
+      isDriveFile: !!fileId,
+      isFolder: url.includes('/folders/')
+    }
+  })
+}
+
 async function callApi(fn, body = {}) {
   if (!API) return { ok: 0, offline: true, error: 'VITE_GAS_URL belum disetel.' }
   try {
@@ -328,13 +356,38 @@ export default function App() {
       const selectedTahun = formData.tahun || (filterTahun !== 'all' ? filterTahun : '2026')
       const targetLokusKode = formData.kode_lokus || 'LK'
       
-      // Susun data dukung: URL gdrive atau rincian file upload
+      // Susun data dukung: URL gdrive atau upload file langsung ke Google Drive
       let finalDataDukung = ''
       if (dataDukungType === 'gdrive') {
         finalDataDukung = formData.link_gdrive || ''
       } else {
         if (uploadedFiles.length > 0) {
-          finalDataDukung = `[${uploadedFiles.length} File]: ` + uploadedFiles.map(f => f.name).join(', ')
+          setLoading(true)
+          const uploadResults = []
+          for (const f of uploadedFiles) {
+            try {
+              const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result.split(',')[1])
+                reader.onerror = e => reject(e)
+                reader.readAsDataURL(f)
+              })
+              const upRes = await callApi('upload', {
+                base64,
+                name: f.name,
+                mimeType: f.type || 'application/octet-stream'
+              })
+              if (upRes && upRes.ok && upRes.url) {
+                uploadResults.push(upRes.url)
+              } else {
+                uploadResults.push(`[Berkas: ${f.name}]`)
+              }
+            } catch (err) {
+              console.warn('Upload error:', err)
+              uploadResults.push(`[Berkas: ${f.name}]`)
+            }
+          }
+          finalDataDukung = uploadResults.join(', ')
         } else {
           finalDataDukung = 'Belum ada file diunggah'
         }
@@ -1588,39 +1641,89 @@ export default function App() {
             </div>
 
             {/* Konten Data Dukung */}
-            {previewDataDukung.raw && previewDataDukung.raw.startsWith('http') ? (
-              <div style={{ background: '#F0F9FF', border: '1.5px solid #BAE6FD', borderRadius: 10, padding: 18, textAlign: 'center' }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>📂</div>
-                <div style={{ fontWeight: 800, fontSize: 13, color: '#0369A1', marginBottom: 4 }}>
-                  Tautan Google Drive / Cloud Terlampir
+            {(() => {
+              const links = parseDriveLinks(previewDataDukung.raw || '')
+              if (links && links.length) {
+                return (
+                  <div style={{ background: '#F0F9FF', border: '1.5px solid #BAE6FD', borderRadius: 10, padding: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                      <span style={{ fontSize: 24 }}>📂</span>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 13, color: '#0369A1' }}>
+                          Dokumen / Tautan Data Dukung
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748B' }}>
+                          Tersedia {links.length} berkas data dukung terhubung
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {links.map((item, idx) => (
+                        <div key={idx} style={{ background: '#FFFFFF', border: '1px solid #BAE6FD', borderRadius: 8, padding: 12 }}>
+                          <div style={{ fontSize: 11, color: '#475569', wordBreak: 'break-all', marginBottom: 10 }}>
+                            🔗 {item.url}
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <a
+                              href={item.downloadUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn-harvest btn-green"
+                              style={{ padding: '6px 12px', fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            >
+                              📥 Download / Unduh Berkas
+                            </a>
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn-harvest btn-cream"
+                              style={{ padding: '6px 12px', fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            >
+                              👁️ Buka di Google Drive ↗
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
+
+              // Jika berupa rincian berkas terunggah (misal: [1 File]: 20261028193059Surat Penerimaan PKL - K3 UNBIM.pdf)
+              return (
+                <div style={{ background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13, color: '#2E7D32', marginBottom: 10 }}>
+                    <span>📎</span>
+                    <span>Berkas Dokumen / Foto Terunggah:</span>
+                  </div>
+
+                  <div style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1E293B', wordBreak: 'break-word', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                      <span>📄</span>
+                      <span>{previewDataDukung.raw || '(Tidak ada keterangan file)'}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#64748B', marginTop: 6 }}>
+                      Status: Berkas tercatat di lembar laporan lokus ini.
+                    </div>
+                  </div>
+
+                  {/* Tombol Akses & Download ke Google Drive */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <a
+                      href={MAIN_DRIVE_FOLDER}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-harvest btn-green"
+                      style={{ padding: '7px 14px', fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      📂 Buka Folder Drive Dokumentasi ↗
+                    </a>
+                  </div>
                 </div>
-                <div style={{ fontSize: 11, color: '#64748B', wordBreak: 'break-all', marginBottom: 14, background: '#FFFFFF', padding: '6px 10px', borderRadius: 6, border: '1px solid #E0F2FE' }}>
-                  {previewDataDukung.raw}
-                </div>
-                <a
-                  href={previewDataDukung.raw}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-harvest btn-green"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 12, textDecoration: 'none' }}
-                >
-                  🔗 Buka Google Drive di Tab Baru ↗
-                </a>
-              </div>
-            ) : (
-              <div style={{ background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: 10, padding: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 12, color: '#2E7D32', marginBottom: 8 }}>
-                  <span>📎</span>
-                  <span>Berkas Dokumen / Foto Terunggah:</span>
-                </div>
-                <div style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6, padding: '10px 12px', fontSize: 12, color: '#1E293B', wordBreak: 'break-word', lineHeight: 1.5 }}>
-                  {previewDataDukung.raw || '(Tidak ada keterangan file)'}
-                </div>
-                <div style={{ fontSize: 11, color: '#64748B', marginTop: 8, fontStyle: 'italic' }}>
-                  💡 Berkas data dukung tersimpan di database laporan lokus ini.
-                </div>
-              </div>
-            )}
+              )
+            })()}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
               <button
